@@ -1,0 +1,339 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Colores basados en el logo AROMASENS (burdeos/vino, dorado y negro) */
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 345 56% 26%; /* Burdeos/vino (color principal del logo) */
+  --primary-foreground: 0 0% 98%;
+  --secondary: 345 46% 36%; /* Burdeos más claro */
+  --secondary-foreground: 0 0% 98%;
+  --accent: 36 100% 50%; /* Dorado (como en el logo) */
+  --accent-foreground: 345 56% 26%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 345 56% 26%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 345 56% 10%; /* Fondo oscuro burdeos/vino */
+  --foreground: 36 100% 95%; /* Texto dorado claro */
+  --muted: 345 30% 20%;
+  --muted-foreground: 36 30% 70%;
+  --popover: 345 56% 8%;
+  --popover-foreground: 36 100% 95%;
+  --card: 345 56% 15%;
+  --card-foreground: 36 100% 95%;
+  --border: 345 30% 25%;
+  --input: 345 30% 25%;
+  --primary: 36 100% 50%; /* Dorado como primario en modo oscuro */
+  --primary-foreground: 345 56% 15%;
+  --secondary: 345 46% 36%;
+  --secondary-foreground: 36 100% 95%;
+  --accent: 36 80% 60%;
+  --accent-foreground: 345 56% 15%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 36 100% 50%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html, body {
+    @apply font-sans antialiased bg-background text-foreground;
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    overscroll-behavior-y: none; /* Previene el rebote en iOS */
+    -webkit-tap-highlight-color: transparent; /* Elimina el resaltado al tocar en móviles */
+  }
+
+  body:has(.chat-container) {
+    overflow-y: auto;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif; /* Usamos Cinzel para títulos elegantes */
+  }
+
+  /* Previene desplazamiento inesperado al enfocar campos de texto en móviles */
+  input, textarea, select, button {
+    font-size: 16px; /* Previene zoom en iOS */
+  }
+}
+
+@layer components {
+  .logo-container {
+    @apply relative overflow-hidden;
+  }
+
+  .logo-container::after {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-accent/20 to-transparent;
+    animation: shimmer 2s infinite;
+    transform: translateX(-100%);
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .futuristic-card {
+    @apply relative overflow-hidden rounded-lg border border-border/50 bg-card p-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-accent/20;
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card)/0.8) 100%);
+  }
+
+  .futuristic-card::before {
+    content: '';
+    @apply absolute inset-0 rounded-lg;
+    background: linear-gradient(45deg, transparent 50%, hsl(var(--accent)/0.1) 50%, transparent 60%);
+    background-size: 200% 200%;
+    animation: gradient-wave 3s ease infinite;
+  }
+
+  @keyframes gradient-wave {
+    0% { background-position: 200% 0%; }
+    100% { background-position: -200% 0%; }
+  }
+
+  .fancy-border {
+    @apply relative rounded-md;
+  }
+
+  .fancy-border::before {
+    content: '';
+    @apply absolute -inset-[1px] rounded-md bg-gradient-to-r from-accent via-primary to-accent animate-border-flow z-[-1];
+  }
+
+  @keyframes border-flow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .animated-bg {
+    background: linear-gradient(-45deg, hsl(var(--background)), hsl(var(--muted)), hsl(var(--background)), hsl(var(--card)));
+    background-size: 400% 400%;
+    animation: gradient-bg 15s ease infinite;
+  }
+
+  @keyframes gradient-bg {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .glass-effect {
+    @apply bg-background/30 backdrop-blur-md border border-border/50;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300;
+  }
+
+  .hover-glow:hover {
+    @apply shadow-[0_0_15px_rgba(var(--accent)/0.5)];
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-primary;
+  }
+
+  .btn-animated {
+    @apply relative overflow-hidden transition-all duration-300;
+  }
+
+  .btn-animated::after {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+
+  .btn-animated:hover::after {
+    transform: translateX(100%);
+  }
+}
+
+/* Fuentes personalizadas */
+@layer utilities {
+  .font-sans {
+    font-family: 'Montserrat', system-ui, sans-serif;
+  }
+
+  .font-serif {
+    font-family: 'Cinzel', serif;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
+  }
+
+  /* Animación de rebote para el asistente */
+  @keyframes bounce-in {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    70% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-bounce-in {
+    animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-subtle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+
+  /* Estilos para el contenido Markdown en burbujas de chat */
+  .markdown-content strong {
+    @apply font-bold text-orange-900;
+  }
+
+  .markdown-content em {
+    @apply italic text-orange-800;
+  }
+
+  .markdown-content code {
+    @apply font-mono text-sm rounded px-1 py-0.5 bg-orange-50 text-orange-800;
+  }
+
+  .markdown-content h1, .markdown-content h2, .markdown-content h3, 
+  .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+    @apply font-bold text-orange-900 my-2;
+  }
+
+  .markdown-content ul, .markdown-content ol {
+    @apply pl-5 my-2 space-y-1;
+  }
+
+  .markdown-content a {
+    @apply text-primary underline hover:text-accent transition-colors;
+  }
+
+  /* Estilos especiales para las burbujas de chat */
+  .chat-message .markdown-content {
+    @apply text-black transition-all;
+  }
+
+  /* Efectos de hover para las burbujas */
+  .chat-message:hover .markdown-content {
+    @apply text-black/90;
+  }
+
+  /* Custom scrollbar - visible pero elegante */
+  .chat-container::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .chat-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .chat-container::-webkit-scrollbar-thumb {
+    background-color: rgba(212, 175, 55, 0.3);
+    border-radius: 10px;
+  }
+
+  .chat-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(212, 175, 55, 0.5);
+  }
+
+  /* Para Firefox */
+  .chat-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(212, 175, 55, 0.3) transparent;
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+    position: relative;
+    max-height: calc(60vh - 120px); /* Ajustar altura máxima */
+    padding-bottom: 70px; /* Espacio para que el campo de entrada sea visible */
+    overscroll-behavior: contain; /* Evita rebotes de scroll en móviles */
+  }
+
+  @media (max-height: 700px) {
+    .chat-container {
+      max-height: calc(50vh - 80px); /* Ajuste para pantallas pequeñas */
+    }
+  }
+
+  @media (max-width: 640px) {
+    .chat-container {
+      max-height: calc(50vh - 60px); /* Aún más pequeño para móviles */
+      padding-bottom: 80px; /* Ajuste para móviles */
+    }
+  }
+
+  /* Hide scrollbar completely if needed */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+.animate-gradient-bg {
+  background-size: 200% 200%;
+  animation: gradient 8s ease infinite;
+}
+
+/* Estilos para el carrusel */
+.carousel-item {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.carousel-item:hover {
+  z-index: 10;
+}
+
+/* Efecto de brillo para imágenes */
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+}
