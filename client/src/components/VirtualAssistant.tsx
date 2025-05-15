@@ -1,7 +1,8 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useAISettings } from "@/context/AISettingsContext";
-import { Bot, X, Volume2 } from "lucide-react";
+import { Bot, X, Volume2, Sparkles } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { useChatContext } from "@/context/ChatContext";
 
 interface PerfumeInfo {
   id: string;
@@ -52,8 +53,10 @@ export default function VirtualAssistant() {
   const [currentMessage, setCurrentMessage] = useState("");
   const [currentPerfume, setCurrentPerfume] = useState<PerfumeInfo | null>(null);
   const [showPerfumeInfo, setShowPerfumeInfo] = useState(false);
+  const [, setLocation] = useLocation();
   const assistantRef = useRef<HTMLDivElement>(null);
   const { ttsSettings, speakText } = useAISettings();
+  const { state: chatState } = useChatContext();
 
   // Mostrar el asistente automáticamente al cargar el componente
   useEffect(() => {
@@ -61,7 +64,7 @@ export default function VirtualAssistant() {
       setIsOpen(true);
       const greeting = greetings[Math.floor(Math.random() * greetings.length)];
       setCurrentMessage(greeting);
-      
+
       if (ttsSettings.enabled) {
         setIsSpeaking(true);
         speakText(greeting);
@@ -75,13 +78,13 @@ export default function VirtualAssistant() {
   useEffect(() => {
     if (assistantRef.current && isOpen) {
       assistantRef.current.classList.add("animate-bounce-in");
-      
+
       const timer = setTimeout(() => {
         if (assistantRef.current) {
           assistantRef.current.classList.remove("animate-bounce-in");
         }
       }, 500);
-      
+
       return () => clearTimeout(timer);
     }
   }, [isOpen, currentMessage]);
@@ -91,7 +94,7 @@ export default function VirtualAssistant() {
     setShowPerfumeInfo(true);
     const message = `Has seleccionado ${perfume.name}. ${perfume.description}`;
     setCurrentMessage(message);
-    
+
     if (ttsSettings.enabled) {
       setIsSpeaking(true);
       speakText(message);
@@ -123,19 +126,61 @@ export default function VirtualAssistant() {
         >
           <X className="w-4 h-4 text-accent" />
         </button>
-        
+
         <div className="flex gap-3 items-start">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
             <Bot className="w-6 h-6 text-white animate-pulse-subtle" />
           </div>
-          
+
           <div className="flex-1">
             <h3 className="font-medium text-accent mb-1">Asistente AROMASENS</h3>
             <p className="text-sm text-foreground">{currentMessage}</p>
-            
+
             {!showPerfumeInfo && (
               <div className="mt-4 grid grid-cols-1 gap-2">
-                <p className="text-xs italic text-foreground/70">Te recomiendo estos perfumes exclusivos:</p>
+                {/* Botón para acceder a recomendaciones personalizadas */}
+                {chatState.sessionId && (
+                  <button
+                    onClick={() => {
+                      if (chatState.sessionId) {
+                        if (chatState.recommendation) {
+                          setLocation(`/recommendation/${chatState.sessionId}`, { 
+                            recommendation: chatState.recommendation, 
+                            state: { recommendation: chatState.recommendation } 
+                          });
+                        } else {
+                          window.location.href = `/recommendation/${chatState.sessionId}`;
+                        }
+                        setIsOpen(false);
+                      }
+                    }}
+                    className="text-left text-sm p-3 rounded-md border border-accent/20 bg-gradient-to-r from-primary/20 to-accent/20 hover:from-primary/30 hover:to-accent/30 transition-colors"
+                  >
+                    <span className="font-medium text-accent flex items-center">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Ver mi recomendación personalizada
+                    </span>
+                    <span className="text-xs block text-foreground/70 mt-1">Basada en tus preferencias</span>
+                  </button>
+                )}
+
+                {/* Botón para acceder directamente a recomendaciones sin un chat previo */}
+                <button
+                  onClick={() => {
+                    // Navegar a recomendaciones
+                    window.location.href = `/recommendation`;
+                    setIsOpen(false);
+                  }}
+                  className="text-left text-sm p-3 rounded-md border border-accent/20 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 transition-colors"
+                >
+                  <span className="font-medium text-orange-500 flex items-center">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Explorar recomendaciones
+                  </span>
+                  <span className="text-xs block text-foreground/70 mt-1">Ver catálogo de fragancias</span>
+                </button>
+
+                <p className="text-xs italic text-foreground/70 mt-2">Te recomiendo estos perfumes exclusivos:</p>
                 {perfumesData.map(perfume => (
                   <button
                     key={perfume.id}
@@ -148,7 +193,7 @@ export default function VirtualAssistant() {
                 ))}
               </div>
             )}
-            
+
             {showPerfumeInfo && currentPerfume && (
               <div className="mt-3 space-y-2">
                 <div className="flex justify-between items-center">
@@ -161,10 +206,10 @@ export default function VirtualAssistant() {
                     <Volume2 className="w-4 h-4 text-accent" />
                   </button>
                 </div>
-                
+
                 <p className="text-xs"><span className="font-medium">Notas:</span> {currentPerfume.notes.join(", ")}</p>
                 <p className="text-xs"><span className="font-medium">Ideal para:</span> {currentPerfume.occasions}</p>
-                
+
                 <div className="pt-2">
                   <button 
                     onClick={() => setShowPerfumeInfo(false)}
