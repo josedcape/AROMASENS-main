@@ -4,11 +4,12 @@ import { useChatContext } from "@/context/ChatContext";
 import { useAISettings } from "@/context/AISettingsContext";
 import { ChatStep } from "@/lib/types";
 import { startChat, sendMessage, getRecommendation, sleep } from "@/lib/chatHelpers";
-import { Send, Bot, User, Sparkles } from "lucide-react";
+import { Send, Bot, User, Sparkles, ArrowUpRight, Clipboard } from "lucide-react";
 import logoImg from "@/assets/aromasens-logo.png";
 import SpeechRecognitionButton from "@/components/SpeechRecognitionButton";
 import TextToSpeechControls from "@/components/TextToSpeechControls";
 import { getMessages } from "@/lib/aiService";
+import { sendUserDataToWebhook } from "@/lib/webhookService";
 
 export default function ChatInterface() {
   const [, setLocation] = useLocation();
@@ -56,27 +57,13 @@ export default function ChatInterface() {
     }
   }, [state.messages, ttsSettings.enabled, speakText]);
 
-  // Efecto para redirigir cuando la conversación está completa
+  // Ya no redirigimos automáticamente, el usuario decidirá cuándo ir a la página de recomendaciones
   useEffect(() => {
     if (state.isConversationComplete && state.sessionId) {
-      console.log("Preparando redirección a recomendación...", state.sessionId);
-      
-      // Pequeño retraso para que el usuario vea el mensaje final
-      const redirectTimer = setTimeout(() => {
-        console.log("Redirigiendo a:", `/recommendation/${state.sessionId}`);
-        
-        // Forzar la redirección usando window.location
-        window.location.href = `/recommendation/${state.sessionId}`;
-        
-        // Como respaldo, también intentamos con setLocation si está disponible
-        if (typeof setLocation === 'function') {
-          setLocation(`/recommendation/${state.sessionId}`);
-        }
-      }, 3000);
-      
-      return () => clearTimeout(redirectTimer);
+      console.log("Conversación completa, esperando acción del usuario...", state.sessionId);
+      // No hacemos redirección automática, el usuario usará los botones
     }
-  }, [state.isConversationComplete, state.sessionId, setLocation]);
+  }, [state.isConversationComplete, state.sessionId]);
 
   // Initialize chat when component mounts
   useEffect(() => {
@@ -124,7 +111,7 @@ export default function ChatInterface() {
         } catch (error) {
           console.error("Failed to initialize chat:", error);
           dispatch({ type: "SET_TYPING", payload: false });
-          
+
           // Mensaje de error en ambos idiomas
           dispatch({
             type: "ADD_MESSAGE",
@@ -198,17 +185,17 @@ export default function ChatInterface() {
         }
       } catch (error) {
         console.error("Error al iniciar el chat después de seleccionar idioma:", error);
-        
+
         // Mensaje de error según el idioma seleccionado
         const errorMessage = detectedLanguage === 'en'
           ? "I'm having trouble connecting to our recommendation system. Let's continue anyway with some basic questions."
           : "Estoy teniendo problemas para conectarme a nuestro sistema de recomendaciones. Continuemos de todos modos con algunas preguntas básicas.";
-          
+
         dispatch({
           type: "ADD_MESSAGE",
           payload: { role: "assistant", content: errorMessage },
         });
-        
+
         // Proporcionar algunas respuestas rápidas genéricas
         dispatch({ 
           type: "SET_QUICK_RESPONSES", 
@@ -270,31 +257,36 @@ export default function ChatInterface() {
       if (response.isComplete || state.currentStep >= ChatStep.COMPLETE) {
         // Generate recommendation
         await sleep(1000);
-        
+
         // Mensaje de generación de recomendación
         const generatingMessage = state.selectedLanguage === 'en' 
           ? "I'm analyzing your profile and generating your personalized perfume recommendation now..." 
           : "Estoy analizando tu perfil y generando tu recomendación personalizada de perfume ahora mismo...";
-        
+
         dispatch({ 
           type: "ADD_MESSAGE", 
           payload: { role: "assistant", content: generatingMessage } 
         });
-        
+
         try {
           // Intentar obtener la recomendación
           const recommendation = await getRecommendation(state, settings.model, state.selectedLanguage);
-          
-          // Mensaje de éxito antes de redirigir
+
+          // Crear un resumen completo de la información del usuario
+          const userSummary = state.selectedLanguage === 'en'
+            ? `**Summary of your preferences**:\n- Gender: ${state.selectedGender === 'masculino' ? 'Male' : 'Female'}\n- Age group: ${state.userResponses.age || 'Not specified'}\n- Experience with fragrances: ${state.userResponses.experience || 'Not specified'}\n- Occasions: ${state.userResponses.occasion || 'Not specified'}\n- Preferences: ${state.userResponses.preferences || 'Not specified'}`
+            : `**Resumen de tus preferencias**:\n- Género: ${state.selectedGender === 'masculino' ? 'Masculino' : 'Femenino'}\n- Grupo de edad: ${state.userResponses.age || 'No especificado'}\n- Experiencia con fragancias: ${state.userResponses.experience || 'No especificada'}\n- Ocasiones: ${state.userResponses.occasion || 'No especificadas'}\n- Preferencias: ${state.userResponses.preferences || 'No especificadas'}`;
+
+          // Mensaje de éxito con el resumen antes de redirigir
           const successMessage = state.selectedLanguage === 'en'
-            ? "Perfect! I've found your ideal fragrance. Let me take you to see your recommendation..."
-            : "¡Perfecto! He encontrado tu fragancia ideal. Permíteme llevarte a ver tu recomendación...";
-          
+            ? `Perfect! Based on your responses, I've found your ideal fragrance.\n\n${userSummary}\n\nYou can now view your personalized recommendation or share this information.`
+            : `¡Perfecto! Basado en tus respuestas, he encontrado tu fragancia ideal.\n\n${userSummary}\n\nAhora puedes ver tu recomendación personalizada o compartir esta información.`;
+
           dispatch({ 
             type: "ADD_MESSAGE", 
             payload: { role: "assistant", content: successMessage } 
           });
-          
+
           // Guardar la recomendación y marcar la conversación como completa
           if (recommendation.recommendation) {
             dispatch({ 
@@ -302,7 +294,7 @@ export default function ChatInterface() {
               payload: recommendation.recommendation 
             });
           }
-          
+
           // Guardar el ID de sesión si existe
           if (recommendation.sessionId) {
             dispatch({ 
@@ -310,28 +302,28 @@ export default function ChatInterface() {
               payload: recommendation.sessionId 
             });
           }
-          
-          // Marcar la conversación como completa para activar la redirección automática
+
+          // Marcar la conversación como completa para mostrar los botones
           dispatch({ 
             type: "SET_CONVERSATION_COMPLETE", 
             payload: true 
           });
         } catch (error) {
           console.error("Error al generar recomendación:", error);
-          
+
           // Mensaje de error
           const errorMessage = state.selectedLanguage === 'en'
             ? "I apologize, but I'm having trouble generating your recommendation. Let me try again..."
             : "Lo siento, estoy teniendo problemas para generar tu recomendación. Déjame intentarlo de nuevo...";
-          
+
           dispatch({ 
             type: "ADD_MESSAGE", 
             payload: { role: "assistant", content: errorMessage } 
           });
-          
+
           // Intentar con una recomendación de respaldo
           await sleep(1500);
-          
+
           // Crear una recomendación de respaldo
           const fallbackRecommendation = {
             perfumeId: 1,
@@ -344,30 +336,30 @@ export default function ChatInterface() {
             notes: ["Cítrico", "Amaderado", "Floral", "Especiado"],
             occasions: "Casual, Formal"
           };
-          
+
           // Mensaje de éxito con la recomendación de respaldo
           const fallbackSuccessMessage = state.selectedLanguage === 'en'
             ? "I've found a perfect match for you! Let me show you..."
             : "¡He encontrado una combinación perfecta para ti! Déjame mostrarte...";
-          
+
           dispatch({ 
             type: "ADD_MESSAGE", 
             payload: { role: "assistant", content: fallbackSuccessMessage } 
           });
-          
+
           // Guardar la recomendación de respaldo
           dispatch({ 
             type: "SET_RECOMMENDATION", 
             payload: fallbackRecommendation 
           });
-          
+
           // Crear un ID de sesión temporal
           const tempSessionId = `temp-${Date.now()}`;
           dispatch({ 
             type: "SET_SESSION_ID", 
             payload: tempSessionId 
           });
-          
+
           // Marcar la conversación como completa para activar la redirección automática
           dispatch({ 
             type: "SET_CONVERSATION_COMPLETE", 
@@ -377,24 +369,24 @@ export default function ChatInterface() {
       }
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
-      
+
       // Mensaje de error según el idioma
       const errorMessage = state.selectedLanguage === 'en'
         ? "I apologize, but I'm having trouble processing your message. Let me try a different approach..."
         : "Lo siento, estoy teniendo problemas para procesar tu mensaje. Déjame intentar un enfoque diferente...";
-        
+
       dispatch({
         type: "ADD_MESSAGE",
         payload: { role: "assistant", content: errorMessage },
       });
-      
+
       // Proporcionar algunas respuestas genéricas para continuar la conversación
       const genericResponses = state.selectedLanguage === 'en'
         ? ["I prefer fresh scents", "I like sweet fragrances", "I enjoy woody notes"]
         : ["Prefiero aromas frescos", "Me gustan las fragancias dulces", "Disfruto de notas amaderadas"];
-        
+
       dispatch({ type: "SET_QUICK_RESPONSES", payload: genericResponses });
-      
+
       // Avanzar al siguiente paso de todos modos para no quedarse atascado
       dispatch({ type: "SET_STEP", payload: (state.currentStep + 1) as ChatStep });
     }
@@ -570,25 +562,143 @@ export default function ChatInterface() {
 
           {/* Mensaje de redirección cuando está completo */}
           {state.isConversationComplete && (
-            <div className="text-center mt-4 flex flex-col items-center space-y-2">
+            <div className="text-center mt-4 flex flex-col items-center space-y-4">
               <div className="text-sm text-orange-600 animate-pulse bg-orange-100/80 py-2 px-4 rounded-full mx-auto max-w-xs backdrop-blur-sm border border-orange-200">
                 {state.selectedLanguage === 'en' 
-                  ? "Redirecting to your personalized recommendation..." 
-                  : "Redirigiendo a tu recomendación personalizada..."}
+                  ? "Your personalized recommendation is ready!" 
+                  : "¡Tu recomendación personalizada está lista!"}
               </div>
-              
-              {/* Botón para forzar la redirección manualmente */}
+
+              <div className="flex flex-wrap gap-4 justify-center">
+                {/* Botón para enviar información a Make */}
+                <button 
+                  onClick={async () => {
+                    try {
+                      if (state.messages.length > 0) {
+                        // Obtener el último mensaje del asistente
+                        const lastAssistantMessage = [...state.messages]
+                          .reverse()
+                          .find(msg => msg.role === 'assistant');
+
+                        if (lastAssistantMessage) {
+                          // Preparar datos para enviar a Make
+                          const userData = {
+                            sessionId: state.sessionId,
+                            gender: state.selectedGender,
+                            userResponses: state.userResponses,
+                            lastAssistantMessage: lastAssistantMessage.content,
+                            timestamp: new Date().toISOString()
+                          };
+
+                          // Enviar los datos
+                          const response = await sendUserDataToWebhook(userData);
+
+                          if (response.ok) {
+                            // Mostrar mensaje de éxito usando alert
+                            alert(state.selectedLanguage === 'en' 
+                              ? "Information sent successfully!"
+                              : "¡Información enviada con éxito!");
+                          } else {
+                            console.error("Error al enviar datos:", await response.text());
+                            alert(state.selectedLanguage === 'en'
+                              ? "Error sending information. Please try again."
+                              : "Error al enviar la información. Por favor, inténtalo de nuevo.");
+                          }
+                        }
+                      }
+                    } catch (error) {
+                      console.error("Error al enviar información:", error);
+                      alert(state.selectedLanguage === 'en'
+                        ? "An unexpected error occurred. Please try again."
+                        : "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.");
+                    }
+                  }}
+                  className="py-3 px-6 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white rounded-full text-sm transition-colors duration-200 flex items-center gap-2 shadow-md"
+                >
+                  <Send className="w-4 h-4" />
+                  {state.selectedLanguage === 'en' 
+                    ? "Send Information" 
+                    : "Enviar Información"}
+                </button>
+
+                {/* Botón para ver recomendaciones */}
+                <button 
+                  onClick={() => {
+                    try {
+                      if (state.sessionId) {
+                        // Usar directamente window.location para una redirección segura
+                        window.location.href = `/recommendation/${state.sessionId}`;
+                      } else if (state.recommendation) {
+                        // Si hay una recomendación pero no sessionId, usar state
+                        window.history.pushState(
+                          { recommendation: state.recommendation }, 
+                          "", 
+                          "/recommendation"
+                        );
+                        window.location.href = "/recommendation";
+                      } else {
+                        // Sin recomendación ni sessionId, redirigir directamente
+                        window.location.href = "/recommendation";
+                      }
+                    } catch (error) {
+                      console.error("Error de navegación:", error);
+                      // Navegación de respaldo absolutamente segura
+                      window.location.href = "/recommendation";
+                    }
+                  }}
+                  className="py-3 px-6 bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 text-white rounded-full text-sm transition-colors duration-200 flex items-center gap-2 shadow-md"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {state.selectedLanguage === 'en' 
+                    ? "See Your Recommendation" 
+                    : "Ver Tu Recomendación"}
+                </button>
+
+                {/* Botón para abrir en nueva ventana */}
+                <button 
+                  onClick={() => {
+                    window.open("/recommendation", '_blank');
+                  }}
+                  className="py-3 px-6 bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white rounded-full text-sm transition-colors duration-200 flex items-center gap-2 shadow-md"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  {state.selectedLanguage === 'en' 
+                    ? "Open in New Window" 
+                    : "Abrir en Nueva Ventana"}
+                </button>
+              </div>
+
+              {/* Botón para copiar chat al portapapeles */}
               <button 
                 onClick={() => {
-                  if (state.sessionId) {
-                    window.location.href = `/recommendation/${state.sessionId}`;
-                  }
+                  // Crear un texto formateado con todo el chat
+                  const chatText = state.messages.map(msg => {
+                    const role = msg.role === 'assistant' 
+                      ? (state.selectedLanguage === 'en' ? '👨‍💼 Assistant:' : '👨‍💼 Asistente:')
+                      : (state.selectedLanguage === 'en' ? '👤 You:' : '👤 Tú:');
+                    return `${role}\n${msg.content}\n`;
+                  }).join('\n');
+
+                  // Copiar al portapapeles
+                  navigator.clipboard.writeText(chatText)
+                    .then(() => {
+                      alert(state.selectedLanguage === 'en' 
+                        ? "Chat copied to clipboard!"
+                        : "¡Chat copiado al portapapeles!");
+                    })
+                    .catch(err => {
+                      console.error('Error al copiar:', err);
+                      alert(state.selectedLanguage === 'en'
+                        ? "Could not copy chat. Please try again."
+                        : "No se pudo copiar el chat. Por favor, inténtalo de nuevo.");
+                    });
                 }}
-                className="mt-2 py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full text-sm transition-colors duration-200"
+                className="mt-2 py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-full text-sm transition-colors duration-200 flex items-center gap-2 mx-auto"
               >
+                <Clipboard className="w-4 h-4" />
                 {state.selectedLanguage === 'en' 
-                  ? "Click here if not redirected automatically" 
-                  : "Haz clic aquí si no eres redirigido automáticamente"}
+                  ? "Copy Chat to Clipboard" 
+                  : "Copiar Chat al Portapapeles"}
               </button>
             </div>
           )}
@@ -673,13 +783,5 @@ export default function ChatInterface() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
 
 
