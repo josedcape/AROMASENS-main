@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from "react";
 import { useLocation, Link } from "wouter";
 import { PerfumeRecommendation } from "@/lib/types";
 import { useChatContext } from "@/context/ChatContext";
 import TextToSpeechControls from "@/components/TextToSpeechControls";
-import { Store, ArrowLeft, Sparkles, Droplets, Clock, Heart, ChevronRight, ChevronLeft, Send } from "lucide-react";
+import { Store, ArrowLeft, Sparkles, Droplets, Clock, Heart, ChevronRight, Send } from "lucide-react";
 import logoImg from "@/assets/aromasens-logo.png";
 import { useAISettings } from "@/context/AISettingsContext";
 import { getMessages } from "@/lib/aiService";
@@ -13,9 +12,17 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { motion } from "framer-motion";
 import { sendUserDataToWebhook } from "@/lib/webhookService";
 
+// URLs de imágenes de respaldo para evitar 404
+const FALLBACK_IMAGES = {
+  main: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1000&q=80",
+  product1: "https://images.unsplash.com/photo-1563170351-be82bc888aa4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1000&q=80",
+  product2: "https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1000&q=80",
+  product3: "https://images.unsplash.com/photo-1594035910387-fea47794261f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1000&q=80"
+};
+
 export default function Recommendation() {
   const [, setLocation] = useLocation();
-  const location = useLocation();
+  const [location] = useLocation();
   const { state: chatState } = useChatContext();
   const { settings, ttsSettings, speakText } = useAISettings();
   const messages = getMessages(settings.language);
@@ -23,26 +30,34 @@ export default function Recommendation() {
   const [showMainImage, setShowMainImage] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [dataSent, setDataSent] = useState(false);
+  const [imageLoadError, setImageLoadError] = useState(false);
+
+  // Función para manejar errores de carga de imágenes
+  const handleImageError = (e) => {
+    console.log("Error al cargar imagen, usando imagen de respaldo");
+    e.target.src = FALLBACK_IMAGES.main;
+    setImageLoadError(true);
+  };
 
   // Función para enviar datos al webhook de Make
   const sendDataToMake = async () => {
     if (isSending || dataSent) return;
-    
+
     setIsSending(true);
-    
+
     try {
       // Preparar los datos para enviar
       const userData = {
-        sessionId: location[0].split('/').pop(),
+        sessionId: getSessionIdFromUrl(),
         gender: chatState.selectedGender,
         userResponses: chatState.userResponses,
         recommendation: recommendation,
         timestamp: new Date().toISOString()
       };
-      
+
       // Enviar los datos al webhook
       const response = await sendUserDataToWebhook(userData);
-      
+
       if (response.ok) {
         setDataSent(true);
         // Actualizar la URL para mostrar que los datos se enviaron
@@ -61,13 +76,25 @@ export default function Recommendation() {
     }
   };
 
-  // Carrusel de productos adicionales
+  // Función para extraer el sessionId de la URL
+  const getSessionIdFromUrl = () => {
+    const pathParts = location.split('/');
+    const possibleSessionId = pathParts[pathParts.length - 1];
+    
+    // Verificar que no sea "recommendation" (que sería el caso cuando la URL es /recommendation sin ID)
+    if (possibleSessionId && possibleSessionId !== "recommendation") {
+      return possibleSessionId;
+    }
+    return "";
+  };
+
+  // Carrusel de productos adicionales con imágenes de respaldo
   const additionalProducts = [
     {
       id: "essence-royal",
       name: "Essence Royal",
       brand: "AROMASENS",
-      imageUrl: "https://i.ibb.co/NYDvMqZ/file-0000000003c461f8951efb39076dbc3e.png",
+      imageUrl: FALLBACK_IMAGES.product1,
       description: "Una sofisticada composición que fusiona elegancia y modernidad con notas de bergamota italiana.",
       notes: ["Bergamota italiana", "Jazmín", "Ámbar"],
       occasions: "Eventos formales, cenas elegantes"
@@ -76,7 +103,7 @@ export default function Recommendation() {
       id: "amber-elixir",
       name: "Amber Elixir",
       brand: "AROMASENS",
-      imageUrl: "https://i.ibb.co/vvB20P3/file-0000000026546230aa854a8e50a62cbb.png",
+      imageUrl: FALLBACK_IMAGES.product2,
       description: "Una fragancia cálida y envolvente con toques orientales y una base de ámbar y vainilla.",
       notes: ["Ámbar", "Vainilla", "Rosa"],
       occasions: "Noches románticas, eventos sociales"
@@ -85,12 +112,11 @@ export default function Recommendation() {
       id: "aqua-vitale",
       name: "Aqua Vitale",
       brand: "AROMASENS",
-      imageUrl: "https://i.ibb.co/vQgvJZV/file-000000006a9061fd892e020436c2b59a.png",
+      imageUrl: FALLBACK_IMAGES.product3,
       description: "Frescura marina con un toque cítrico que evoca las brisas mediterráneas y sensación de libertad.",
       notes: ["Limón de Amalfi", "Menta", "Algas marinas"],
       occasions: "Uso diario, actividades al aire libre"
     },
-    // Espacio para más productos
     {
       id: "midnight-orchid",
       name: "Midnight Orchid",
@@ -111,15 +137,27 @@ export default function Recommendation() {
     }
   ];
 
+  // Recomendación de respaldo para usar cuando falla la API
+  const fallbackRecommendation = {
+    perfumeId: 1,
+    brand: "AROMASENS",
+    name: "Aroma Sensual",
+    description: settings.language === 'en'
+      ? "A captivating fragrance with citrus and woody notes that evokes sensations of freshness and elegance."
+      : "Una fragancia cautivadora con notas cítricas y amaderadas que evoca sensaciones de frescura y elegancia.",
+    imageUrl: FALLBACK_IMAGES.main,
+    notes: ["Cítrico", "Amaderado", "Floral", "Especiado"],
+    occasions: "Casual, Formal"
+  };
+
   // Get recommendation from location state or redirect to home
   useEffect(() => {
-    const locationState = window.history.state?.state;
-    const params = location[0].split('/');
-    const sessionId = params[params.length - 1];
+    const locationState = window.history.state;
+    const sessionId = getSessionIdFromUrl();
 
     console.log("Estado de ubicación:", locationState);
-    console.log("Parámetros de URL:", params);
-    
+    console.log("ID de sesión extraído:", sessionId);
+
     // Verificar si los datos ya fueron enviados
     if (locationState?.dataSent) {
       setDataSent(true);
@@ -128,38 +166,58 @@ export default function Recommendation() {
     if (locationState?.recommendation) {
       console.log("Recomendación encontrada en estado:", locationState.recommendation);
       setRecommendation(locationState.recommendation);
-      
+
       // Mostrar un mensaje de bienvenida cuando llega desde el chat
       const welcomeMessage = settings.language === 'en'
         ? `Here's your perfect perfume match! I've selected ${locationState.recommendation.name} based on your preferences.`
         : `¡Aquí está tu perfume ideal! He seleccionado ${locationState.recommendation.name} basado en tus preferencias.`;
-      
+
       // Si TTS está habilitado, leer el mensaje de bienvenida
       if (ttsSettings.enabled) {
         setTimeout(() => {
           speakText(welcomeMessage);
         }, 500);
       }
-    } else if (sessionId && sessionId !== 'undefined') {
+    } else if (sessionId && sessionId !== 'undefined' && sessionId !== 'recommendation') {
       // Intentar cargar la recomendación desde la API usando el sessionId
       console.log("Intentando cargar recomendación para sesión:", sessionId);
-      // Aquí iría la lógica para cargar la recomendación desde la API
-      // Por ahora, usamos una recomendación de respaldo
-      const fallbackRecommendation = {
-        perfumeId: 1,
-        brand: "AROMASENS",
-        name: "Aroma Sensual",
-        description: settings.language === 'en'
-          ? "A captivating fragrance with citrus and woody notes that evokes sensations of freshness and elegance."
-          : "Una fragancia cautivadora con notas cítricas y amaderadas que evoca sensaciones de frescura y elegancia.",
-        imageUrl: "https://i.ibb.co/NYDvMqZ/file-0000000003c461f8951efb39076dbc3e.png",
-        notes: ["Cítrico", "Amaderado", "Floral", "Especiado"],
-        occasions: "Casual, Formal"
+
+      // Hacer una petición a la API para obtener la recomendación
+      const fetchRecommendation = async () => {
+        try {
+          const response = await fetch(`/api/recommendations/${sessionId}`);
+          if (response.ok) {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const data = await response.json();
+              if (data.recommendation) {
+                setRecommendation(data.recommendation);
+                return;
+              }
+            } else {
+              throw new Error("La respuesta no es JSON válido");
+            }
+          }
+          // Si no se pudo obtener la recomendación, usar una de respaldo
+          setRecommendation(fallbackRecommendation);
+        } catch (error) {
+          console.error("Error al cargar la recomendación:", error);
+          // Usar recomendación de respaldo en caso de error
+          setRecommendation(fallbackRecommendation);
+        }
       };
+
+      fetchRecommendation();
+    } else {
+      // Si no hay sessionId válido, usar recomendación de respaldo
+      console.log("Usando recomendación de respaldo");
       setRecommendation(fallbackRecommendation);
-    } else if (!chatState.selectedGender) {
-      console.log("No hay género seleccionado, redirigiendo a inicio");
-      setLocation("/");
+
+      // Si no hay género seleccionado, redirigir a inicio
+      if (!chatState.selectedGender) {
+        console.log("No hay género seleccionado, redirigiendo a inicio");
+        setLocation("/");
+      }
     }
   }, [location, chatState.selectedGender, setLocation, ttsSettings.enabled, speakText, settings.language]);
 
@@ -234,6 +292,7 @@ export default function Recommendation() {
                 src={logoImg} 
                 alt="AROMASENS Logo" 
                 className="w-full h-full object-cover"
+                onError={(e) => e.currentTarget.style.display = 'none'}
               />
             </div>
           </motion.div>
@@ -248,7 +307,7 @@ export default function Recommendation() {
           </motion.h2>
 
           {/* Mensaje de notificación si viene desde webhook */}
-          {location.state?.dataSent && (
+          {dataSent && (
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -316,9 +375,10 @@ export default function Recommendation() {
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 animate-pulse-subtle opacity-50 rounded-xl"></div>
                       <img 
-                        src={recommendation.imageUrl} 
+                        src={imageLoadError ? FALLBACK_IMAGES.main : recommendation.imageUrl} 
                         alt={recommendation.name} 
                         className="w-full h-auto rounded-lg z-10 relative hover:scale-105 transition-transform duration-500 cursor-pointer"
+                        onError={handleImageError}
                       />
                       <div className="absolute -top-6 -right-6 w-12 h-12 rounded-full bg-card flex items-center justify-center border border-accent/50 backdrop-blur-md shadow-lg animate-float" style={{ animationDelay: '0.3s' }}>
                         <Heart className="w-6 h-6 text-accent" />
@@ -483,7 +543,8 @@ export default function Recommendation() {
                     <div className="futuristic-card h-full overflow-hidden hover:shadow-accent/20 transition-all duration-500 transform hover:-translate-y-2 cursor-pointer">
                       <div className="relative h-64 overflow-hidden">
                         <div 
-                          className="absolute inset-0 bg-cover bg-center transform hover:scale-110 transition-transform duration-700"
+                          className="absolute inset-0 bg-cover bg-center transform hover:scale-110 
+                          transition-transform duration-700"
                           style={{backgroundImage: `url('${product.imageUrl}')`}}
                         ></div>
                         <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent"></div>
@@ -528,7 +589,7 @@ export default function Recommendation() {
           <div className="glass-effect rounded-2xl p-8 backdrop-blur-md fancy-border overflow-hidden relative">
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-b from-accent/10 to-transparent rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-t from-primary/10 to-transparent rounded-full blur-3xl"></div>
-            
+
             <h3 className="font-serif text-3xl text-gradient mb-4">Experiencia Olfativa Personalizada</h3>
             <p className="text-foreground mb-6 max-w-xl mx-auto">
               Descubre el poder de las fragancias para expresar tu personalidad única. Nuestros expertos perfumistas han creado cada aroma con atención meticulosa a los detalles.
@@ -570,7 +631,7 @@ export default function Recommendation() {
           </button>
         </motion.div>
       )}
-      
+
       {/* Mensaje de notificación si los datos fueron enviados */}
       {dataSent && (
         <motion.div 
@@ -589,11 +650,10 @@ export default function Recommendation() {
           </p>
         </motion.div>
       )}
-      
+
       {/* Virtual Assistant Component */}
       <VirtualAssistant />
     </div>
   );
 }
-
 
