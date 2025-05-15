@@ -295,7 +295,7 @@ export async function generateChatResponse(
           messages: [
             {
               role: "system",
-              content: "Eres un asistente amigable de tienda de perfumes. Mantén tus respuestas concisas, útiles y en español."
+              content: "eres un asistente virtual de una tienda de perfumes llamada AROMASENS. Estás manteniendo una conversación con un cliente para recomendarle el perfume perfecto, tienes un tono amable, conciso."
             },
             {
               role: "user",
