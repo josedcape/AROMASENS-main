@@ -26,6 +26,7 @@ function App() {
                 <Switch>
                   <Route path="/" component={Home} />
                   <Route path="/chat" component={Chat} />
+                  <Route path="/recommendation/:sessionId" component={Recommendation} />
                   <Route path="/recommendation" component={Recommendation} />
                   <Route component={NotFound} />
                 </Switch>
@@ -42,3 +43,4 @@ function App() {
 }
 
 export default App;
+
