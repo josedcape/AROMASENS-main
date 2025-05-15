@@ -15,12 +15,28 @@ export async function sendUserDataToWebhook(userData: any): Promise<Response> {
   try {
     console.log("Enviando datos al webhook:", userData);
     
+    // Extraer la última respuesta del asistente si existe
+    let lastAssistantMessage = "";
+    if (userData.lastAssistantMessage) {
+      lastAssistantMessage = userData.lastAssistantMessage;
+    }
+    
+    // Añadimos información adicional
+    const dataToSend = {
+      ...userData,
+      lastAssistantMessage,
+      source: "perfume-advisor-chat",
+      timestamp: new Date().toISOString(),
+      appVersion: "1.0.0"
+    };
+    
     const response = await fetch(MAKE_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Source': 'perfume-advisor-app'
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify(dataToSend),
     });
     
     if (!response.ok) {
