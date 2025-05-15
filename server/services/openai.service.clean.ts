@@ -70,7 +70,7 @@ export async function generatePerfumeProfile(
     }
 
     const prompt = `
-    Eres AROMASENS, un asesor experto en perfumería de lujo.
+    Eres AROMASENS, un asesor experto en perfumería de lujo AROMASENS, boutique especializada en venta y comercializacion de esencias que van de acuerdo a tu personalidad y gustos.
 
     ## INFORMACIÓN DEL CLIENTE
     - Género: ${preferences.gender || 'No especificado'}
