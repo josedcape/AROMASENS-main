@@ -1,9 +1,24 @@
-
 import GenderSelection from "@/components/GenderSelection";
+import { Link } from "wouter";
+import { Sparkles } from "lucide-react";
 
 export default function Home() {
   return (
     <div className="flex-grow animated-bg min-h-screen">
+      {/* Botón flotante para acceder a recomendaciones */}
+      <div className="fixed bottom-10 right-10 z-50">
+        <a href="/Recommendation" onClick={(e) => {
+          e.preventDefault();
+          // Forzar navegación directa
+          window.location.replace("/Recommendation");
+        }}>
+          <button className="py-3 px-6 bg-gradient-to-r from-primary to-accent text-white rounded-full shadow-lg hover:shadow-accent/20 transition-all duration-300 flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            <span>Ver Recomendaciones</span>
+          </button>
+        </a>
+      </div>
+      
       {/* Elementos decorativos de fondo */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         {/* Círculos decorativos animados */}
