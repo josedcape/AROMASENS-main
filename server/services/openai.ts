@@ -89,7 +89,7 @@ export async function generatePerfumeProfile(
     if (openai) {
       try {
         const prompt = `
-        Eres un experto en perfumería y psicología especializado en recomendaciones de fragancias. Necesitas analizar el perfil y preferencias de un usuario para sugerir el perfume perfecto.
+        Eres un experto en perfumería y psicología especializado en recomendaciones de fragancias para AROMASENS, una exclusiva tienda boutique de perfumes. Necesitas analizar el perfil y las preferencias de un usuario para sugerir el perfume perfecto de nuestra marca.
 
         Preferencias del usuario:
         - Género: ${gender}
@@ -100,7 +100,7 @@ export async function generatePerfumeProfile(
 
         Basándote en esta información:
         1. Crea un breve perfil psicológico del usuario (3-4 oraciones).
-        2. Selecciona un ID de perfume de esta lista que mejor se adapte a su perfil: ${JSON.stringify(availablePerfumeIds)}
+        2. Selecciona un ID de perfume de esta lista de fragancias exclusivas de AROMASENS que mejor se adapte a su perfil: ${JSON.stringify(availablePerfumeIds)}
         3. Proporciona una razón para tu recomendación que conecte su psicología con la fragancia (2-3 oraciones).
 
         Responde con JSON en este formato:
@@ -117,7 +117,7 @@ export async function generatePerfumeProfile(
             {
               role: "system",
               content:
-                "Eres un experto en perfumería y psicología especializado en recomendaciones de fragancias. Tu análisis es siempre reflexivo y personalizado."
+                "Eres un experto en perfumería y psicología especializado en recomendaciones de fragancias para AROMASENS, una tienda boutique de perfumes de alta gama. Tu análisis siempre es reflexivo, personalizado y dirigido a encontrar la fragancia perfecta dentro de nuestra exclusiva selección."
             },
             {
               role: "user",
