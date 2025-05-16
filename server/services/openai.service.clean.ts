@@ -56,7 +56,7 @@ export function handleLanguageSelection(selectedLanguage: string): string {
   }
 }
 
-// Genera un perfil psicológico y recomendación de perfume
+// Genera un perfil psicológico y recomendación de perfume inventado personalizado
 export async function generatePerfumeProfile(
   preferences: any, 
   conversationHistory: ChatCompletionMessageParam[] = []
@@ -70,7 +70,37 @@ export async function generatePerfumeProfile(
     }
 
     const prompt = `
-    Eres AROMASENS, un asesor experto en perfumería de lujo AROMASENS, boutique especializada en venta y comercializacion de esencias que van de acuerdo a tu personalidad y gustos.
+    Eres AROMASENS, un asesor experto en perfumería de lujo AROMASENS, boutique especializada en perfumes exclusivos. Basándote en la conversación con el cliente, crea un perfil psicológico detallado y recomienda un perfume inventado único de la colección AROMASENS.
+    
+    Analiza a profundidad las preferencias del cliente:
+    - Género preferido: ${preferences.gender || 'No especificado'}
+    - Edad aproximada: ${preferences.age || 'No especificada'}
+    - Experiencia con perfumes: ${preferences.experience || 'No especificada'}
+    - Ocasión de uso: ${preferences.occasion || 'No especificada'}
+    - Preferencias olfativas: ${preferences.preferences || 'No especificadas'}
+    - Rasgos de personalidad: ${preferences.personality || 'No especificados'}
+    
+    Crea un perfume inventado de AROMASENS con:
+    1. Un nombre sofisticado y exclusivo
+    2. Una historia o inspiración única
+    3. Notas de salida, corazón y fondo detalladas
+    4. Una descripción de la personalidad que refleja
+    5. Ocasiones ideales para usarlo
+    
+    Responde en formato JSON con esta estructura:
+    {
+      "psychologicalProfile": "Análisis psicológico detallado del cliente",
+      "recommendedPerfume": {
+        "id": [número aleatorio entre 1000-9999],
+        "name": "Nombre exclusivo del perfume",
+        "brand": "AROMASENS",
+        "story": "Historia o inspiración detrás del perfume",
+        "notes": ["Nota 1", "Nota 2", "Nota 3", "Nota 4", "Nota 5"],
+        "personalityMatch": "Descripción de cómo el perfume refleja la personalidad del cliente",
+        "occasions": ["Ocasión 1", "Ocasión 2", "Ocasión 3"]
+      },
+      "recommendationReason": "Razón personalizada por la que este perfume es perfecto para el cliente"
+    } venta y comercializacion de esencias que van de acuerdo a tu personalidad y gustos.
 
     ## INFORMACIÓN DEL CLIENTE
     - Género: ${preferences.gender || 'No especificado'}
