@@ -97,6 +97,61 @@ export async function handleGetRecommendation(req: Request, res: Response) {
           price: 89.99,
           notes: ["Cítrico", "Amaderado", "Floral", "Especiado"],
           occasions: ["Casual", "Formal"],
+
+export async function handleEnhancePrompt(req: Request, res: Response) {
+  try {
+    const { prompt, language = 'es' } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ message: "Prompt is required" });
+    }
+
+    // Validar el idioma
+    const validLanguage = language === 'es' || language === 'en' ? language : 'es';
+    
+    // Usar OpenAI para mejorar el prompt
+    try {
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: validLanguage === 'es' 
+              ? "Eres un asistente especializado en mejorar preguntas para un chatbot de perfumería AROMASENS. Tu tarea es reformular y enriquecer el prompt del usuario para que sea más claro, específico y aporte información relevante para la recomendación de perfumes."
+              : "You are an assistant specialized in improving questions for an AROMASENS perfumery chatbot. Your task is to reformulate and enrich the user's prompt to make it clearer, more specific, and provide relevant information for perfume recommendations."
+          },
+          {
+            role: "user",
+            content: validLanguage === 'es'
+              ? `Mejora este mensaje para un asistente de perfumería, añadiendo detalles relevantes sin cambiar la intención original: "${prompt}"`
+              : `Enhance this message for a perfumery assistant, adding relevant details without changing the original intent: "${prompt}"`
+          }
+        ]
+      });
+
+      if (response.choices[0].message.content) {
+        return res.status(200).json({ 
+          enhancedPrompt: response.choices[0].message.content 
+        });
+      } else {
+        throw new Error("Empty response from AI");
+      }
+    } catch (aiError) {
+      console.error("Error enhancing prompt with AI:", aiError);
+      // En caso de error, devolver el prompt original
+      return res.status(200).json({ enhancedPrompt: prompt });
+    }
+  } catch (error) {
+    console.error("Error in handleEnhancePrompt:", error);
+    return res.status(500).json({ 
+      message: "Failed to enhance prompt",
+      enhancedPrompt: req.body.prompt // Devolver el prompt original como fallback
+    });
+  }
+}
+
           intensity: "Media",
           longevity: "8-10 horas",
           season: "Primavera/Verano"
