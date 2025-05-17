@@ -18,6 +18,8 @@ export default function ChatInterface() {
   const { settings, setLanguage, ttsSettings, speakText } = useAISettings();
   const [userInput, setUserInput] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [sendingToMake, setSendingToMake] = useState(false);
+  const [dataSentToMake, setDataSentToMake] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -419,6 +421,55 @@ export default function ChatInterface() {
     handleSendMessage();
   };
 
+  const handleSendToMake = async () => {
+    if (sendingToMake) return;
+
+    setSendingToMake(true);
+    setDataSentToMake(false);
+
+    try {
+      // Obtener el último mensaje del asistente
+      const messages = state.messages || [];
+      const lastAssistantMessage = [...messages].reverse().find(msg => msg.role === 'assistant');
+      const conversationSummary = messages
+                          .map(msg => `${msg.role === 'assistant' ? '🤖 Asistente:' : '👤 Usuario:'} ${msg.content}`)
+                          .join('\n\n');
+
+      if (lastAssistantMessage) {
+        // Preparar datos para enviar a Make
+        const userData = {
+          sessionId: state.sessionId,
+          gender: state.selectedGender,
+          userResponses: state.userResponses,
+          lastAssistantMessage: lastAssistantMessage.content,
+          conversationSummary: conversationSummary,
+          recommendation: state.recommendation,
+          timestamp: new Date().toISOString(),
+          webhook: "https://hook.us1.make.com/apcwekw3rgkm0uq5mmx1pmqf9o6j2okq"
+        };
+
+        // Enviar datos al webhook
+        const response = await sendUserDataToWebhook(userData);
+
+        if (response.ok) {
+          console.log("✅ Datos enviados correctamente a Make");
+          setDataSentToMake(true);
+
+          // Ocultar la confirmación después de 5 segundos
+          setTimeout(() => {
+            setDataSentToMake(false);
+          }, 5000);
+        } else {
+          console.error("❌ Error al enviar datos a Make:", await response.text());
+        }
+      }
+    } catch (error) {
+      console.error("Error al enviar datos a Make:", error);
+    } finally {
+      setSendingToMake(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 h-full flex flex-col pt-6 pb-10">
       <div className="mb-8 text-center">
@@ -571,64 +622,38 @@ export default function ChatInterface() {
               </div>
 
               <div className="flex flex-wrap gap-4 justify-center">
-                {/* Botón para enviar información a Make */}
-                <button 
-                  onClick={async () => {
-                    try {
-                      if (state.messages.length > 0) {
-                        // Obtener el último mensaje del asistente
-                        const lastAssistantMessage = [...state.messages]
-                          .reverse()
-                          .find(msg => msg.role === 'assistant');
-                        
-                        // Construir un resumen completo de la conversación
-                        const conversationSummary = state.messages
-                          .map(msg => `${msg.role === 'assistant' ? '🤖 Asistente:' : '👤 Usuario:'} ${msg.content}`)
-                          .join('\n\n');
+                {/* Botón para enviar la conversación a Make */}
+                      <button
+                        onClick={() => handleSendToMake()}
+                        className="mt-4 px-5 py-3 bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 text-white rounded-full shadow-lg transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-3 group"
+                        disabled={sendingToMake}
+                      >
+                        {sendingToMake ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-4 w-4 rounded-full border-2 border-t-transparent border-white animate-spin"></div>
+                            <span className="font-medium">Enviando información...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                            <span className="font-medium">Enviar resumen a AROMASENS</span>
+                          </div>
+                        )}
+                      </button>
 
-                        if (lastAssistantMessage) {
-                          // Preparar datos para enviar a Make
-                          const userData = {
-                            sessionId: state.sessionId,
-                            gender: state.selectedGender,
-                            userResponses: state.userResponses,
-                            lastAssistantMessage: lastAssistantMessage.content,
-                            conversationSummary: conversationSummary,
-                            recommendation: state.recommendation,
-                            timestamp: new Date().toISOString(),
-                            webhook: "https://hook.us1.make.com/apcwekw3rgkm0uq5mmx1pmqf9o6j2okq"
-                          };
-
-                          // Enviar los datos
-                          const response = await sendUserDataToWebhook(userData);
-
-                          if (response.ok) {
-                            // Mostrar mensaje de éxito usando alert
-                            alert(state.selectedLanguage === 'en' 
-                              ? "Information sent successfully to AROMASENS team!"
-                              : "¡Información enviada con éxito al equipo de AROMASENS!");
-                          } else {
-                            console.error("Error al enviar datos:", await response.text());
-                            alert(state.selectedLanguage === 'en'
-                              ? "Error sending information. Please try again."
-                              : "Error al enviar la información. Por favor, inténtalo de nuevo.");
-                          }
-                        }
-                      }
-                    } catch (error) {
-                      console.error("Error al enviar información:", error);
-                      alert(state.selectedLanguage === 'en'
-                        ? "An unexpected error occurred. Please try again."
-                        : "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.");
-                    }
-                  }}
-                  className="py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-full text-sm transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium animate-pulse-subtle"
-                >
-                  <Send className="w-4 h-4" />
-                  {state.selectedLanguage === 'en' 
-                    ? "Send Conversation to AROMASENS" 
-                    : "Enviar Conversación a AROMASENS"}
-                </button>
+                      {/* Mensaje de confirmación tras envío exitoso */}
+                      {dataSentToMake && (
+                        <div className="mt-3 animate-fade-in">
+                          <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-3 rounded-lg border border-green-200 shadow-sm">
+                            <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <p className="text-sm font-medium">
+                              ¡Gracias! La información ha sido enviada correctamente a AROMASENS.
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                 {/* Botón para ver recomendaciones */}
                 <button 
@@ -751,12 +776,12 @@ export default function ChatInterface() {
               type="button"
               onClick={async () => {
                 if (!userInput.trim()) return;
-                
+
                 // Mostrar un estado de carga
                 const originalInput = userInput;
                 setUserInput(state.selectedLanguage === 'en' ? "Enhancing your message..." : "Mejorando tu mensaje...");
                 setIsProcessing(true);
-                
+
                 try {
                   const enhancedPrompt = await enhancePrompt(originalInput, state.selectedLanguage);
                   setUserInput(enhancedPrompt);
@@ -806,5 +831,3 @@ export default function ChatInterface() {
     </div>
   );
 }
-
-
