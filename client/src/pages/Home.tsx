@@ -1,6 +1,6 @@
 import GenderSelection from "@/components/GenderSelection";
 import { Link } from "wouter";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Store } from "lucide-react";
 
 export default function Home() {
   return (
