@@ -97,6 +97,59 @@ export async function handleGetRecommendation(req: Request, res: Response) {
           price: 89.99,
           notes: ["Cítrico", "Amaderado", "Floral", "Especiado"],
           occasions: ["Casual", "Formal"],
+          intensity: "Media",
+          longevity: "8-10 horas",
+          season: "Primavera/Verano"
+        },
+        message: language === 'en' 
+          ? "Based on your preferences, I recommend Aroma Sensual. This fragrance combines citrus and woody notes for a fresh and elegant experience."
+          : "Basado en tus preferencias, te recomiendo Aroma Sensual. Esta fragancia combina notas cítricas y amaderadas para una experiencia fresca y elegante."
+      };
+
+      return res.status(200).json(mockRecommendation);
+    }
+
+    // Si no estamos en modo desarrollo, continuar con el proceso normal
+    const recommendation = await getPerfumeRecommendation(
+      {
+        gender,
+        age,
+        experience,
+        occasion,
+        preferences
+      },
+      validatedModel,
+      language
+    );
+
+    res.status(200).json(recommendation);
+  } catch (error) {
+    console.error("Error generating recommendation:", error);
+    res.status(400).json({ message: error.message || "Failed to generate recommendation" });
+  }
+}
+
+// Función auxiliar para validar el modelo de IA
+function validateAIModel(model: string): AIModel {
+  const validModels: AIModel[] = ['openai', 'anthropic', 'gemini'];
+
+  if (!validModels.includes(model as AIModel)) {
+    console.warn(`Modelo de IA inválido: ${model}, usando openai por defecto`);
+    return 'openai';
+  }
+
+  return model as AIModel;
+}
+
+// Función auxiliar para validar el idioma
+function validateLanguage(language: string): 'es' | 'en' {
+  if (language !== 'es' && language !== 'en') {
+    console.warn(`Idioma inválido: ${language}, usando español por defecto`);
+    return 'es';
+  }
+
+  return language as 'es' | 'en';
+}
 
 export async function handleEnhancePrompt(req: Request, res: Response) {
   try {
@@ -150,58 +203,4 @@ export async function handleEnhancePrompt(req: Request, res: Response) {
       enhancedPrompt: req.body.prompt // Devolver el prompt original como fallback
     });
   }
-}
-
-          intensity: "Media",
-          longevity: "8-10 horas",
-          season: "Primavera/Verano"
-        },
-        message: language === 'en' 
-          ? "Based on your preferences, I recommend Aroma Sensual. This fragrance combines citrus and woody notes for a fresh and elegant experience."
-          : "Basado en tus preferencias, te recomiendo Aroma Sensual. Esta fragancia combina notas cítricas y amaderadas para una experiencia fresca y elegante."
-      };
-
-      return res.status(200).json(mockRecommendation);
-    }
-
-    // Si no estamos en modo desarrollo, continuar con el proceso normal
-    const recommendation = await getPerfumeRecommendation(
-      {
-        gender,
-        age,
-        experience,
-        occasion,
-        preferences
-      },
-      validatedModel,
-      language
-    );
-
-    res.status(200).json(recommendation);
-  } catch (error) {
-    console.error("Error generating recommendation:", error);
-    res.status(400).json({ message: error.message || "Failed to generate recommendation" });
-  }
-}
-
-// Función auxiliar para validar el modelo de IA
-function validateAIModel(model: string): AIModel {
-  const validModels: AIModel[] = ['openai', 'anthropic', 'gemini'];
-
-  if (!validModels.includes(model as AIModel)) {
-    console.warn(`Modelo de IA inválido: ${model}, usando openai por defecto`);
-    return 'openai';
-  }
-
-  return model as AIModel;
-}
-
-// Función auxiliar para validar el idioma
-function validateLanguage(language: string): 'es' | 'en' {
-  if (language !== 'es' && language !== 'en') {
-    console.warn(`Idioma inválido: ${language}, usando español por defecto`);
-    return 'es';
-  }
-
-  return language as 'es' | 'en';
 }
