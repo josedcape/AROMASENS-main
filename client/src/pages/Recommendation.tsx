@@ -492,10 +492,12 @@ export default function Recommendation() {
                   transition={{ duration: 0.4, delay: 0.7 }}
                   className="flex flex-col sm:flex-row gap-4"
                 >
-                  <button className="btn-animated py-3 px-6 bg-gradient-to-r from-primary to-accent text-white rounded-full shadow-lg hover:shadow-accent/20 transition-all duration-300 flex items-center justify-center">
-                    <Store className="w-5 h-5 mr-2" />
-                    <span>Ver en tienda</span>
-                  </button>
+                  <Link href="/shop">
+                    <button className="btn-animated py-3 px-6 bg-gradient-to-r from-primary to-accent text-white rounded-full shadow-lg hover:shadow-accent/20 transition-all duration-300 flex items-center justify-center">
+                      <Store className="w-5 h-5 mr-2" />
+                      <span>Ver en tienda</span>
+                    </button>
+                  </Link>
 
                   <Link href="/">
                     <button className="btn-animated py-3 px-6 glass-effect border border-accent/20 text-accent rounded-full transition-all duration-300 flex items-center justify-center hover:bg-accent/10">

@@ -28,3 +28,54 @@ export default function Footer() {
     </footer>
   );
 }
+import { Link } from "wouter";
+import { useAISettings } from "@/context/AISettingsContext";
+import { getMessages } from "@/lib/aiService";
+import BotidinamixLogo from "./BotidinamixLogo";
+
+export default function Footer() {
+  const { settings } = useAISettings();
+  const messages = getMessages(settings.language);
+  
+  return (
+    <footer className="py-4 px-4 border-t border-accent/20 text-center text-xs text-foreground/60 glass-effect">
+      <div className="container mx-auto max-w-7xl">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <a className="hover:text-accent transition-colors">
+                {messages.home}
+              </a>
+            </Link>
+            <Link href="/chat">
+              <a className="hover:text-accent transition-colors">
+                {messages.chat}
+              </a>
+            </Link>
+            <Link href="/shop">
+              <a className="hover:text-accent transition-colors">
+                {settings.language === 'en' ? 'Shop' : 'Tienda'}
+              </a>
+            </Link>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <span>{messages.poweredBy}</span>
+            <a 
+              href="https://botidinamix.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center hover:text-accent transition-colors"
+            >
+              <BotidinamixLogo className="h-4 w-auto ml-1" />
+            </a>
+          </div>
+          
+          <div>
+            © 2025 AROMASENS. {messages.rightsReserved}
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
