@@ -38,3 +38,11 @@ export default function Home() {
     </div>
   );
 }
+
+
+              <Link href="/shop">
+                <button className="flex-1 btn-animated py-3 px-6 glass-effect border border-accent/20 text-accent rounded-full transition-all duration-300 hover:bg-accent/10">
+                  <Store className="w-5 h-5 mr-2" />
+                  <span>{settings.language === 'en' ? 'Visit Store' : 'Visitar Tienda'}</span>
+                </button>
+              </Link>
