@@ -579,6 +579,11 @@ export default function ChatInterface() {
                         const lastAssistantMessage = [...state.messages]
                           .reverse()
                           .find(msg => msg.role === 'assistant');
+                        
+                        // Construir un resumen completo de la conversación
+                        const conversationSummary = state.messages
+                          .map(msg => `${msg.role === 'assistant' ? '🤖 Asistente:' : '👤 Usuario:'} ${msg.content}`)
+                          .join('\n\n');
 
                         if (lastAssistantMessage) {
                           // Preparar datos para enviar a Make
@@ -587,7 +592,10 @@ export default function ChatInterface() {
                             gender: state.selectedGender,
                             userResponses: state.userResponses,
                             lastAssistantMessage: lastAssistantMessage.content,
-                            timestamp: new Date().toISOString()
+                            conversationSummary: conversationSummary,
+                            recommendation: state.recommendation,
+                            timestamp: new Date().toISOString(),
+                            webhook: "https://hook.us1.make.com/apcwekw3rgkm0uq5mmx1pmqf9o6j2okq"
                           };
 
                           // Enviar los datos
@@ -596,8 +604,8 @@ export default function ChatInterface() {
                           if (response.ok) {
                             // Mostrar mensaje de éxito usando alert
                             alert(state.selectedLanguage === 'en' 
-                              ? "Information sent successfully!"
-                              : "¡Información enviada con éxito!");
+                              ? "Information sent successfully to AROMASENS team!"
+                              : "¡Información enviada con éxito al equipo de AROMASENS!");
                           } else {
                             console.error("Error al enviar datos:", await response.text());
                             alert(state.selectedLanguage === 'en'
@@ -613,12 +621,12 @@ export default function ChatInterface() {
                         : "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.");
                     }
                   }}
-                  className="py-3 px-6 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white rounded-full text-sm transition-colors duration-200 flex items-center gap-2 shadow-md"
+                  className="py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-full text-sm transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium animate-pulse-subtle"
                 >
                   <Send className="w-4 h-4" />
                   {state.selectedLanguage === 'en' 
-                    ? "Send Information" 
-                    : "Enviar Información"}
+                    ? "Send Conversation to AROMASENS" 
+                    : "Enviar Conversación a AROMASENS"}
                 </button>
 
                 {/* Botón para ver recomendaciones */}

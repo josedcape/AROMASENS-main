@@ -13,7 +13,7 @@ const MAKE_WEBHOOK_URL = "https://hook.us1.make.com/apcwekw3rgkm0uq5mmx1pmqf9o6j
  */
 export async function sendUserDataToWebhook(userData: any): Promise<Response> {
   try {
-    console.log("Enviando datos al webhook:", userData);
+    console.log("Enviando datos al webhook de AROMASENS:", userData);
     
     // Extraer la última respuesta del asistente si existe
     let lastAssistantMessage = "";
@@ -25,24 +25,30 @@ export async function sendUserDataToWebhook(userData: any): Promise<Response> {
     const dataToSend = {
       ...userData,
       lastAssistantMessage,
-      source: "perfume-advisor-chat",
+      source: "aromasens-perfume-advisor",
       timestamp: new Date().toISOString(),
-      appVersion: "1.0.0"
+      appVersion: "1.1.0",
+      service: "AROMASENS Perfume Advisor",
+      conversationComplete: true
     };
+    
+    // Mostrar mensaje de registro detallado
+    console.log(`Enviando datos de conversación a AROMASENS (${dataToSend.timestamp})`);
     
     const response = await fetch(MAKE_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Source': 'perfume-advisor-app'
+        'X-Source': 'aromasens-advisor',
+        'X-Request-Time': new Date().toISOString()
       },
       body: JSON.stringify(dataToSend),
     });
     
     if (!response.ok) {
-      console.error('Error al enviar datos al webhook:', response.status, response.statusText);
+      console.error('Error al enviar datos al webhook de AROMASENS:', response.status, response.statusText);
     } else {
-      console.log('Datos enviados correctamente al webhook');
+      console.log('✅ Datos enviados correctamente al webhook de AROMASENS');
     }
     
     return response;
