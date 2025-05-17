@@ -10,6 +10,7 @@ import SpeechRecognitionButton from "@/components/SpeechRecognitionButton";
 import TextToSpeechControls from "@/components/TextToSpeechControls";
 import { getMessages } from "@/lib/aiService";
 import { sendUserDataToWebhook } from "@/lib/webhookService";
+import { enhancePrompt } from "@/lib/promptEnhancerService";
 
 export default function ChatInterface() {
   const [, setLocation] = useLocation();
@@ -746,6 +747,33 @@ export default function ChatInterface() {
                 <Send className={`w-5 h-5 ${userInput.trim() ? 'text-accent' : 'text-muted-foreground'}`} />
               </button>
             </div>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!userInput.trim()) return;
+                
+                // Mostrar un estado de carga
+                const originalInput = userInput;
+                setUserInput(state.selectedLanguage === 'en' ? "Enhancing your message..." : "Mejorando tu mensaje...");
+                setIsProcessing(true);
+                
+                try {
+                  const enhancedPrompt = await enhancePrompt(originalInput, state.selectedLanguage);
+                  setUserInput(enhancedPrompt);
+                } catch (error) {
+                  console.error("Error al mejorar prompt:", error);
+                  // Restaurar el input original en caso de error
+                  setUserInput(originalInput);
+                } finally {
+                  setIsProcessing(false);
+                }
+              }}
+              disabled={state.isTyping || isProcessing || !userInput.trim() || state.isConversationComplete}
+              className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white py-3 px-4 transition-all duration-300 disabled:opacity-50 btn-animated"
+              title={state.selectedLanguage === 'en' ? "Enhance your message with AI" : "Mejorar tu mensaje con IA"}
+            >
+              <Sparkles className="w-5 h-5" />
+            </button>
             <button
               type="submit"
               className={`bg-gradient-to-r from-primary to-accent hover:from-accent hover:to-primary text-white py-3 px-6 rounded-r-full transition-all duration-300 disabled:opacity-50 btn-animated ${
