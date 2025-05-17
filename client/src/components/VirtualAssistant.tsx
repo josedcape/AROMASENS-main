@@ -359,12 +359,30 @@ async function generateDynamicResponse(message: string): Promise<string> {
       },
       body: JSON.stringify({ 
         prompt: message,
-        context: `Eres un asistente virtual de la boutique de perfumes de lujo AROMASENS. Tu objetivo es entender la consulta del cliente y proporcionar información y recomendaciones sobre nuestros perfumes exclusivos. Conoces todos los detalles sobre nuestra colección que incluye: ${perfumesData.map(p => p.name).join(', ')}. Mantén un tono sofisticado, personalizado y empático, propio de un asesor de lujo.`
+        context: `Eres un asistente virtual experto de la boutique de perfumes de lujo AROMASENS. Tu objetivo es entender la consulta del cliente y proporcionar información detallada y recomendaciones sobre nuestros perfumes exclusivos. Conoces todos los detalles sobre nuestra colección que incluye: ${perfumesData.map(p => p.name).join(', ')}. Para cada perfume, conoces sus notas, ocasiones recomendadas, duración, intensidad, estilo y precio. Mantén un tono sofisticado, personalizado y empático, propio de un asesor de lujo. Nunca respondas con 'Lo siento, no pude procesar tu consulta'. Si no entiendes algo específico, pregunta por más detalles o haz recomendaciones generales basadas en los perfumes más populares.`
       }),
     });
     
     const data = await response.json();
-    return data.enhancedText || "Lo siento, no pude procesar tu consulta.";
+    
+    // Si la respuesta tiene una propiedad enhancedPrompt, la usamos
+    if (data.enhancedPrompt) {
+      return data.enhancedPrompt;
+    }
+    
+    // Si no hay respuesta mejorada, verificamos si hay algún perfume mencionado
+    const perfumeMentioned = perfumesData.find(p => 
+      message.toLowerCase().includes(p.name.toLowerCase()) || 
+      message.toLowerCase().includes(p.id.replace(/-/g, ' ').toLowerCase())
+    );
+    
+    if (perfumeMentioned) {
+      // Si se menciona un perfume específico, devolvemos su información detallada
+      return getPerfumeDetailedInfo(perfumeMentioned.id);
+    }
+    
+    // Si no podemos generar una respuesta dinámica o específica, usamos el generador estático
+    return generateStaticRecommendation(message);
   } catch (error) {
     console.error("Error al generar respuesta dinámica:", error);
     // Si falla la API, volvemos a la función de recomendación estática
@@ -643,9 +661,36 @@ export default function VirtualAssistant() {
     const responseTime = isPerfumeQuery || isDetailQuery ? 1000 : 1500;
     
     try {
-      // Generar respuesta basada en el mensaje del usuario y el contexto
-      const recommendationResult = await generateRecommendation(newUserMessage.content);
-      let { response, perfumes } = recommendationResult;
+      // Verificar si el mensaje es una consulta directa sobre un perfume específico
+      const directPerfumeQuery = perfumesData.find(p => 
+        inputText.toLowerCase().includes(p.name.toLowerCase()) || 
+        inputText.toLowerCase().includes(p.id.replace(/-/g, ' ').toLowerCase())
+      );
+      
+      let response = "";
+      let perfumes: PerfumeInfo[] = [];
+      
+      if (directPerfumeQuery) {
+        // Si es una consulta directa sobre un perfume, proporcionar información detallada
+        response = getPerfumeDetailedInfo(directPerfumeQuery.id);
+        perfumes = [directPerfumeQuery];
+      } else {
+        // Intentar una respuesta dinámica primero
+        try {
+          response = await generateDynamicResponse(inputText);
+          
+          // Identificar qué perfumes podrían estar relacionados con la respuesta
+          const matchingPerfumes = findMatchingPerfumes(inputText);
+          perfumes = matchingPerfumes.slice(0, 3);
+        } catch (dynamicError) {
+          console.error("Error en respuesta dinámica:", dynamicError);
+          
+          // Si falla, usar el método de recomendación estándar
+          const recommendationResult = await generateRecommendation(newUserMessage.content);
+          response = recommendationResult.response;
+          perfumes = recommendationResult.perfumes;
+        }
+      }
       
       // Verificar si hay mensajes previos para mantener coherencia
       if (chatMessages.length > 1) {
@@ -658,34 +703,66 @@ export default function VirtualAssistant() {
           .slice(-2);
         
         // Si el usuario pregunta por más detalles después de una recomendación
-        if (lastAssistantMessage && perfumes.length === 1 && 
+        if (lastAssistantMessage && 
             (inputText.toLowerCase().includes("más detalles") || 
-             inputText.toLowerCase().includes("cuéntame más") ||
-             inputText.toLowerCase().includes("información") ||
+             inputText.toLowerCase().includes("cuéntame más") || 
+             inputText.toLowerCase().includes("información") || 
              inputText.toLowerCase().includes("dime más"))) {
-          // Obtener información detallada del perfume
-          response = getPerfumeDetailedInfo(perfumes[0].id);
+          
+          // Buscar si se mencionó un perfume específico en el último mensaje del asistente
+          const mentionedPerfumes = perfumesData.filter(p => 
+            lastAssistantMessage.content.toLowerCase().includes(p.name.toLowerCase())
+          );
+          
+          if (mentionedPerfumes.length === 1) {
+            // Si solo se mencionó un perfume, mostrar detalles de ese perfume
+            response = getPerfumeDetailedInfo(mentionedPerfumes[0].id);
+            perfumes = [mentionedPerfumes[0]];
+          } else if (mentionedPerfumes.length > 1) {
+            // Si se mencionaron varios, preguntar cuál le interesa más
+            response = "Mencioné varios perfumes. ¿Sobre cuál te gustaría conocer más detalles específicos?";
+            perfumes = mentionedPerfumes.slice(0, 3);
+          }
         }
         
         // Si el usuario está pidiendo una recomendación después de mencionar preferencias
         if (lastUserMessages.length >= 2 && 
             (inputText.toLowerCase().includes("recomienda") || 
-             inputText.toLowerCase().includes("sugiere") ||
-             inputText.toLowerCase().includes("cuál es mejor"))) {
+             inputText.toLowerCase().includes("sugiere") || 
+             inputText.toLowerCase().includes("cuál es mejor") ||
+             inputText.toLowerCase().includes("qué me recomiendas"))) {
+          
           // Combinar mensajes anteriores para contextualizar la recomendación
           const context = lastUserMessages.map(msg => msg.content).join(" ");
-          const contextRecommendation = await generateRecommendation(context);
-          
-          if (contextRecommendation.perfumes.length > 0) {
-            perfumes = contextRecommendation.perfumes;
-            response = `Basándome en tus preferencias anteriores, estas son mis recomendaciones personalizadas:\n\n`;
+          try {
+            const dynamicResponse = await generateDynamicResponse(
+              `Basándote en estas preferencias: "${context}", recomiéndame perfumes específicos de AROMASENS`
+            );
+            response = dynamicResponse;
             
-            perfumes.forEach((perfume, index) => {
-              const price = perfumePrices[perfume.id];
-              response += `**${index + 1}. ${perfume.name}** (${price} USD): ${perfume.description}\n\n`;
-            });
+            // Extraer perfumes mencionados en la respuesta
+            const mentionedPerfumes = perfumesData.filter(p => 
+              dynamicResponse.toLowerCase().includes(p.name.toLowerCase())
+            );
             
-            response += "¿Te gustaría conocer más detalles sobre alguna de estas fragancias exclusivas?";
+            if (mentionedPerfumes.length > 0) {
+              perfumes = mentionedPerfumes.slice(0, 3);
+            }
+          } catch (error) {
+            console.error("Error en recomendación contextual:", error);
+            
+            const contextRecommendation = await generateRecommendation(context);
+            if (contextRecommendation.perfumes.length > 0) {
+              perfumes = contextRecommendation.perfumes;
+              response = `Basándome en tus preferencias anteriores, estas son mis recomendaciones personalizadas:\n\n`;
+              
+              perfumes.forEach((perfume, index) => {
+                const price = perfumePrices[perfume.id];
+                response += `**${index + 1}. ${perfume.name}** (${price} USD): ${perfume.description}\n\n`;
+              });
+              
+              response += "¿Te gustaría conocer más detalles sobre alguna de estas fragancias exclusivas?";
+            }
           }
         }
       }
@@ -742,11 +819,23 @@ export default function VirtualAssistant() {
 
   const activateChatMode = () => {
     setChatMode(true);
-    // Mensaje inicial del asistente
+    
+    // Mensaje inicial más elaborado y atractivo
     const initialMessage: ChatMessage = {
       role: 'assistant',
-      content: "¡Hola! Soy tu asistente personal de AROMASENS. Cuéntame qué tipo de perfume estás buscando. ¿Prefieres fragancias florales, frutales, amaderadas o quizás algo para una ocasión especial?"
+      content: `# ¡Bienvenido/a a AROMASENS! ✨
+
+Me complace ser tu asesor personal de fragancias. Estoy aquí para ayudarte a descubrir el perfume perfecto que refleje tu personalidad y estilo.
+
+Puedes preguntarme sobre:
+- Nuestras exclusivas colecciones de fragancias
+- Detalles específicos de cualquier perfume (notas, duración, ocasión ideal)
+- Recomendaciones basadas en tus preferencias
+- Precios y características de nuestros productos
+
+¿Qué tipo de fragancia estás buscando hoy? ¿Prefieres aromas florales, frutales, amaderados, o buscas algo para una ocasión especial?`
     };
+    
     setChatMessages([initialMessage]);
   };
 
