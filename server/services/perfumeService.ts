@@ -31,10 +31,11 @@ const LANGUAGE_OPTIONS = {
 };
 
 const QUICK_RESPONSES = {
+  0: ["Florales", "Frutales", "Amaderadas", "Orientales/especiadas", "Cítricas", "Dulces"],
+  1: ["18-25 años", "26-35 años", "36-45 años", "46-55 años", "56+ años"],
   2: ["Principiante", "Uso ocasional", "Entusiasta", "Coleccionista", "Experto"],
   3: ["Uso diario", "Eventos formales", "Citas románticas", "Reuniones sociales", "Trabajo"],
-  4: ["Florales", "Frutales", "Amaderadas", "Orientales/especiadas", "Cítricas", "Dulces"],
-  5: ["Introvertido/a", "Extrovertido/a", "Romántico/a", "Aventurero/a", "Tranquilo/a", "Sofisticado/a"]
+  4: ["Introvertido/a", "Extrovertido/a", "Romántico/a", "Aventurero/a", "Tranquilo/a", "Sofisticado/a"]
 };
 
 // Función auxiliar para manejo de errores

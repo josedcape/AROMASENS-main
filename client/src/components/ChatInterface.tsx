@@ -661,19 +661,6 @@ export default function ChatInterface() {
                     ? "See Your Recommendation" 
                     : "Ver Tu Recomendación"}
                 </button>
-
-                {/* Botón para abrir en nueva ventana */}
-                <button 
-                  onClick={() => {
-                    window.open("/recommendation", '_blank');
-                  }}
-                  className="py-3 px-6 bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white rounded-full text-sm transition-colors duration-200 flex items-center gap-2 shadow-md"
-                >
-                  <ArrowUpRight className="w-4 h-4" />
-                  {state.selectedLanguage === 'en' 
-                    ? "Open in New Window" 
-                    : "Abrir en Nueva Ventana"}
-                </button>
               </div>
 
               {/* Botón para copiar chat al portapapeles */}

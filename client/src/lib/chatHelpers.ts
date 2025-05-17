@@ -25,7 +25,7 @@ export async function sendMessage(
 
 export async function getRecommendation(chatState: ChatState, model: AIModel = 'openai', language: 'es' | 'en' = 'es'): Promise<ApiResponse> {
   const { userResponses } = chatState;
-  
+
   try {
     const response = await apiRequest(
       "POST", 
@@ -40,11 +40,11 @@ export async function getRecommendation(chatState: ChatState, model: AIModel = '
         language
       }
     );
-    
+
     return await response.json();
   } catch (error) {
     console.error("Error al obtener recomendación:", error);
-    
+
     // Crear una recomendación de respaldo en caso de error
     return {
       recommendation: {
@@ -72,4 +72,11 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export type ChatStep = 0 | 1 | 2 | 3 | 4 | 5;
 
+export interface ChatPreferences {
+  preferences: string; // Primero: preferencias de fragancias
+  age: string;         // Segundo: edad
+  experience: string;  // Tercero: experiencia con perfumes
+  occasion: string;    // Cuarto: ocasiones de uso
+}
