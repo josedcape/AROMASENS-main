@@ -154,18 +154,18 @@ function validateLanguage(language: string): 'es' | 'en' {
 export async function handleEnhancePrompt(req: Request, res: Response) {
   try {
     const { prompt, language = 'es' } = req.body;
-    
+
     if (!prompt) {
       return res.status(400).json({ message: "Prompt is required" });
     }
 
     // Validar el idioma
     const validLanguage = language === 'es' || language === 'en' ? language : 'es';
-    
+
     // Usar OpenAI para mejorar el prompt
     try {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      
+
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [

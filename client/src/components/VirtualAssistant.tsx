@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { useAISettings } from "@/context/AISettingsContext";
-import { Bot, X, Volume2, Sparkles, Send, ArrowLeft, ChevronDown, MessageSquare, Zap } from "lucide-react";
+import { Bot, X, Volume2, Sparkles, Send, ArrowLeft, ChevronDown, MessageSquare, Zap, Mic, MicOff } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useChatContext } from "@/context/ChatContext";
+import { speechRecognition } from "@/lib/aiService";
+import TextToSpeechControls from "@/components/TextToSpeechControls";
 
 interface PerfumeInfo {
   id: string;
@@ -346,7 +348,32 @@ function findMatchingPerfumes(query: string): PerfumeInfo[] {
 }
 
 // Función para generar una recomendación basada en un mensaje del usuario
-function generateRecommendation(message: string): {response: string, perfumes: PerfumeInfo[]} {
+async function generateDynamicResponse(message: string): Promise<string> {
+  try {
+    // Intentamos utilizar la API para obtener una respuesta dinámica
+    const apiUrl = '/api/chat/enhance-prompt';
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        prompt: message,
+        context: `Eres un asistente virtual de la boutique de perfumes de lujo AROMASENS. Tu objetivo es entender la consulta del cliente y proporcionar información y recomendaciones sobre nuestros perfumes exclusivos. Conoces todos los detalles sobre nuestra colección que incluye: ${perfumesData.map(p => p.name).join(', ')}. Mantén un tono sofisticado, personalizado y empático, propio de un asesor de lujo.`
+      }),
+    });
+    
+    const data = await response.json();
+    return data.enhancedText || "Lo siento, no pude procesar tu consulta.";
+  } catch (error) {
+    console.error("Error al generar respuesta dinámica:", error);
+    // Si falla la API, volvemos a la función de recomendación estática
+    return generateStaticRecommendation(message);
+  }
+}
+
+// Versión fallback de la función original de recomendación
+function generateStaticRecommendation(message: string): string {
   const query = message.toLowerCase();
   
   // Verificar si el usuario está preguntando específicamente por un perfume
@@ -358,8 +385,7 @@ function generateRecommendation(message: string): {response: string, perfumes: P
     const price = perfumePrices[perfume.id];
     const details = perfumeDetails[perfume.id];
     
-    return {
-      response: `
+    return `
 **${perfume.name}** - *${price} USD*
 
 ${perfume.description}
@@ -371,9 +397,7 @@ ${perfume.description}
 
 ${getPerfumeUniqueSellingPoint(perfume.id)}
 
-¿Te gustaría conocer otra fragancia similar o prefieres más detalles sobre ${perfume.name}?`,
-      perfumes: [perfume]
-    };
+¿Te gustaría conocer otra fragancia similar o prefieres más detalles sobre ${perfume.name}?`;
   }
   
   // Comprobar si es una pregunta sobre precio
@@ -397,10 +421,7 @@ ${getPerfumeUniqueSellingPoint(perfume.id)}
       responseText += "\n¿Alguna de estas fragancias te interesa particularmente?";
     }
     
-    return {
-      response: responseText,
-      perfumes: matchingPerfumes.slice(0, 3)
-    };
+    return responseText;
   }
   
   const matchingPerfumes = findMatchingPerfumes(query);
@@ -432,7 +453,7 @@ ${getPerfumeUniqueSellingPoint(perfume.id)}
     // Seleccionar los 3 mejores perfumes basados en los criterios más dominantes
     let bestMatches = [...matchingPerfumes];
     
-    // Priorizar según las preferencias detectadas
+    // Aplicar filtros según preferencias detectadas
     if (containsFloral || containsFrutal || containsMaderado || containsDulce) {
       bestMatches = bestMatches.filter(p => {
         const notasLower = p.notes.map(n => n.toLowerCase().trim());
@@ -449,30 +470,6 @@ ${getPerfumeUniqueSellingPoint(perfume.id)}
         }
         if (containsDulce && (notasLower.some(n => /dulce|vainilla|ámbar|chocolate/i.test(n)) || /dulce|vainilla|ámbar/i.test(descripcionLower))) {
           return true;
-        }
-        return false;
-      });
-    }
-    
-    // Si todavía tenemos demasiados, filtrar por ocasión
-    if (bestMatches.length > 3 && (containsFormal || containsCasual || containsRomantico || containsEstacion)) {
-      bestMatches = bestMatches.filter(p => {
-        const ocasionLower = p.occasions.toLowerCase();
-        
-        if (containsFormal && /formal|trabajo|oficina|negocio/i.test(ocasionLower)) {
-          return true;
-        }
-        if (containsCasual && /casual|diario|día a día/i.test(ocasionLower)) {
-          return true;
-        }
-        if (containsRomantico && /romántico|cita|noche|especial/i.test(ocasionLower)) {
-          return true;
-        }
-        if (containsEstacion) {
-          if (/verano/i.test(query) && /verano/i.test(ocasionLower)) return true;
-          if (/invierno/i.test(query) && /invierno/i.test(ocasionLower)) return true;
-          if (/primavera/i.test(query) && /primavera/i.test(ocasionLower)) return true;
-          if (/otoño/i.test(query) && /otoño/i.test(ocasionLower)) return true;
         }
         return false;
       });
@@ -497,10 +494,34 @@ ${getPerfumeUniqueSellingPoint(perfume.id)}
   
   responseText += "¿Te gustaría conocer más detalles sobre alguna de estas fragancias o tienes alguna preferencia específica?";
   
-  return {
-    response: responseText,
-    perfumes: matchingPerfumes.slice(0, 3)  // Retornar máximo 3 perfumes
-  };
+  return responseText;
+}
+
+// Función para generar una recomendación basada en un mensaje del usuario
+async function generateRecommendation(message: string): Promise<{response: string, perfumes: PerfumeInfo[]}> {
+  // Intentar generar una respuesta dinámica con IA primero
+  try {
+    const dynamicResponse = await generateDynamicResponse(message);
+    
+    // Encontrar perfumes mencionados en la respuesta
+    const matchingPerfumes = findMatchingPerfumes(message);
+    
+    return {
+      response: dynamicResponse,
+      perfumes: matchingPerfumes.slice(0, 3)  // Retornar máximo 3 perfumes
+    };
+  } catch (error) {
+    console.error("Error al generar respuesta dinámica, usando fallback:", error);
+    
+    // Si falla, usar la versión estática
+    const staticResponse = generateStaticRecommendation(message);
+    const matchingPerfumes = findMatchingPerfumes(message);
+    
+    return {
+      response: staticResponse,
+      perfumes: matchingPerfumes.slice(0, 3)
+    };
+  }
 }
 
 export default function VirtualAssistant() {
@@ -514,11 +535,46 @@ export default function VirtualAssistant() {
   const [userInput, setUserInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [suggestedPerfumes, setSuggestedPerfumes] = useState<PerfumeInfo[]>([]);
+  const [isListening, setIsListening] = useState(false);
   const [, setLocation] = useLocation();
   const assistantRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { ttsSettings, speakText } = useAISettings();
   const { state: chatState } = useChatContext();
+
+  // Configurar reconocimiento de voz
+  useEffect(() => {
+    // Configurar callbacks para el reconocimiento de voz
+    speechRecognition.onResult((text) => {
+      if (chatMode) {
+        setUserInput(text);
+        // Enviar el mensaje automáticamente después de reconocerlo
+        setTimeout(() => {
+          handleSendMessage(undefined, text);
+        }, 500);
+      }
+      setIsListening(false);
+    });
+    
+    speechRecognition.onStart(() => {
+      setIsListening(true);
+    });
+    
+    speechRecognition.onEnd(() => {
+      setIsListening(false);
+    });
+    
+    speechRecognition.onError(() => {
+      setIsListening(false);
+    });
+    
+    return () => {
+      // Detener el reconocimiento si el componente se desmonta
+      if (isListening) {
+        speechRecognition.stop();
+      }
+    };
+  }, [chatMode, isListening]);
 
   // Mostrar el asistente automáticamente al cargar el componente
   useEffect(() => {
@@ -558,15 +614,16 @@ export default function VirtualAssistant() {
     }
   }, [chatMessages]);
 
-  const handleSendMessage = async (e?: FormEvent) => {
+  const handleSendMessage = async (e?: FormEvent, voiceInput?: string) => {
     if (e) e.preventDefault();
     
-    if (!userInput.trim()) return;
+    const inputText = voiceInput || userInput;
+    if (!inputText.trim()) return;
     
     // Añadir mensaje del usuario
     const newUserMessage: ChatMessage = {
       role: 'user',
-      content: userInput
+      content: inputText
     };
     
     setChatMessages(prev => [...prev, newUserMessage]);
@@ -575,19 +632,20 @@ export default function VirtualAssistant() {
     
     // Verificar si es una consulta específica sobre un perfume
     const isPerfumeQuery = perfumesData.some(perfume => 
-      userInput.toLowerCase().includes(perfume.name.toLowerCase()) ||
-      userInput.toLowerCase().includes(perfume.id.toLowerCase().replace('-', ' '))
+      inputText.toLowerCase().includes(perfume.name.toLowerCase()) ||
+      inputText.toLowerCase().includes(perfume.id.toLowerCase().replace('-', ' '))
     );
     
     // Verificar si es sobre precio, características, etc.
-    const isDetailQuery = /precio|costo|vale|dolar|\$|caracter[ií]sticas|detalles|duraci[oó]n|intensidad/i.test(userInput.toLowerCase());
+    const isDetailQuery = /precio|costo|vale|dolar|\$|caracter[ií]sticas|detalles|duraci[oó]n|intensidad/i.test(inputText.toLowerCase());
     
     // Simular tiempo de respuesta (más corto para consultas simples, más largo para respuestas elaboradas)
-    const responseTime = isPerfumeQuery || isDetailQuery ? 2000 : 1500;
+    const responseTime = isPerfumeQuery || isDetailQuery ? 1000 : 1500;
     
-    setTimeout(() => {
+    try {
       // Generar respuesta basada en el mensaje del usuario y el contexto
-      let { response, perfumes } = generateRecommendation(newUserMessage.content);
+      const recommendationResult = await generateRecommendation(newUserMessage.content);
+      let { response, perfumes } = recommendationResult;
       
       // Verificar si hay mensajes previos para mantener coherencia
       if (chatMessages.length > 1) {
@@ -601,22 +659,22 @@ export default function VirtualAssistant() {
         
         // Si el usuario pregunta por más detalles después de una recomendación
         if (lastAssistantMessage && perfumes.length === 1 && 
-            (userInput.toLowerCase().includes("más detalles") || 
-             userInput.toLowerCase().includes("cuéntame más") ||
-             userInput.toLowerCase().includes("información") ||
-             userInput.toLowerCase().includes("dime más"))) {
+            (inputText.toLowerCase().includes("más detalles") || 
+             inputText.toLowerCase().includes("cuéntame más") ||
+             inputText.toLowerCase().includes("información") ||
+             inputText.toLowerCase().includes("dime más"))) {
           // Obtener información detallada del perfume
           response = getPerfumeDetailedInfo(perfumes[0].id);
         }
         
         // Si el usuario está pidiendo una recomendación después de mencionar preferencias
         if (lastUserMessages.length >= 2 && 
-            (userInput.toLowerCase().includes("recomienda") || 
-             userInput.toLowerCase().includes("sugiere") ||
-             userInput.toLowerCase().includes("cuál es mejor"))) {
+            (inputText.toLowerCase().includes("recomienda") || 
+             inputText.toLowerCase().includes("sugiere") ||
+             inputText.toLowerCase().includes("cuál es mejor"))) {
           // Combinar mensajes anteriores para contextualizar la recomendación
           const context = lastUserMessages.map(msg => msg.content).join(" ");
-          const contextRecommendation = generateRecommendation(context);
+          const contextRecommendation = await generateRecommendation(context);
           
           if (contextRecommendation.perfumes.length > 0) {
             perfumes = contextRecommendation.perfumes;
@@ -632,27 +690,54 @@ export default function VirtualAssistant() {
         }
       }
       
-      // Añadir mensaje del asistente
-      const newAssistantMessage: ChatMessage = {
-        role: 'assistant',
-        content: response
-      };
+      setTimeout(() => {
+        // Añadir mensaje del asistente
+        const newAssistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: response
+        };
+        
+        setChatMessages(prev => [...prev, newAssistantMessage]);
+        setIsTyping(false);
+        setSuggestedPerfumes(perfumes);
+        
+        // Leer la respuesta si TTS está habilitado
+        if (ttsSettings.enabled) {
+          // Eliminar formato markdown para TTS
+          const plainText = response.replace(/\*\*(.*?)\*\*/g, '$1')
+                                   .replace(/\n\n/g, '. ')
+                                   .replace(/\n/g, ' ')
+                                   .replace(/\*/g, '')
+                                   .replace(/#{1,3} /g, '');
+          speakText(plainText);
+        }
+      }, responseTime);
+    } catch (error) {
+      console.error("Error al generar respuesta:", error);
       
-      setChatMessages(prev => [...prev, newAssistantMessage]);
-      setIsTyping(false);
-      setSuggestedPerfumes(perfumes);
-      
-      // Leer la respuesta si TTS está habilitado
-      if (ttsSettings.enabled) {
-        // Eliminar formato markdown para TTS
-        const plainText = response.replace(/\*\*(.*?)\*\*/g, '$1')
-                                 .replace(/\n\n/g, '. ')
-                                 .replace(/\n/g, ' ')
-                                 .replace(/\*/g, '')
-                                 .replace(/#{1,3} /g, '');
-        speakText(plainText);
-      }
-    }, responseTime);
+      // En caso de error, mostrar un mensaje de error
+      setTimeout(() => {
+        const errorMessage: ChatMessage = {
+          role: 'assistant',
+          content: "Lo siento, tuve un problema al procesar tu mensaje. ¿Podrías intentar nuevamente con otra consulta?"
+        };
+        
+        setChatMessages(prev => [...prev, errorMessage]);
+        setIsTyping(false);
+        
+        if (ttsSettings.enabled) {
+          speakText("Lo siento, tuve un problema al procesar tu mensaje. ¿Podrías intentar nuevamente?");
+        }
+      }, 1000);
+    }
+  };
+  
+  const handleVoiceRecognition = () => {
+    if (isListening) {
+      speechRecognition.stop();
+    } else {
+      speechRecognition.start();
+    }
   };
 
   const activateChatMode = () => {
@@ -934,6 +1019,18 @@ export default function VirtualAssistant() {
                   className="flex-grow p-2 rounded-md bg-background/30 border border-accent/20 focus:outline-none focus:ring-1 focus:ring-accent text-sm"
                 />
                 <button
+                  type="button"
+                  onClick={handleVoiceRecognition}
+                  className={`p-2 rounded-full ${
+                    isListening 
+                      ? 'bg-red-500 text-white' 
+                      : 'bg-accent/20 text-accent hover:bg-accent/30'
+                  } transition-colors`}
+                  title={isListening ? "Detener reconocimiento de voz" : "Iniciar reconocimiento de voz"}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+                <button
                   type="submit"
                   disabled={!userInput.trim() || isTyping}
                   className={`p-2 rounded-full ${
@@ -945,7 +1042,8 @@ export default function VirtualAssistant() {
                   <Send className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex justify-center mt-2">
+              <div className="flex justify-between items-center mt-2">
+                <TextToSpeechControls />
                 <div className="text-xs text-foreground/50 flex items-center">
                   <Zap className="w-3 h-3 mr-1 text-accent" />
                   <span>Asistente de fragancias AROMASENS</span>
