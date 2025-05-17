@@ -275,10 +275,10 @@ export async function generateChatResponse(
 
         Basado en el paso actual, responde con un mensaje apropiado:
 
-        Paso 0: Preséntate y pregunta por la edad del cliente.
-        Paso 1: Pregunta sobre su experiencia con perfumes y sus favoritos.
-        Paso 2: Pregunta sobre las ocasiones para las que quiere el perfume.
-        Paso 3: Pregunta sobre sus notas o tipos de fragancias preferidas.
+        Paso 0: Preséntate y pregunta sobre sus notas o tipos de fragancias preferidas (florales, amaderadas, cítricas, orientales, etc.).
+        Paso 1: Pregunta sobre su edad. Es crucial obtener este dato para la recomendación personalizada.
+        Paso 2: Pregunta sobre su experiencia con perfumes y sus favoritos.
+        Paso 3: Pregunta sobre las ocasiones para las que quiere el perfume.
         Paso 4: Agradece sus respuestas y hazle saber que le proporcionarás una recomendación.
 
         INSTRUCCIONES IMPORTANTES DE FORMATO:

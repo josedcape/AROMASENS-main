@@ -15,17 +15,33 @@ export async function generateChatResponse(
   try {
     console.log(`Generando respuesta de chat con el modelo ${model}`);
 
+    // Añadimos instrucciones específicas para el asistente de AROMASENS
+    const aromasensInstructions = language === 'es' 
+      ? `Actúa como un especialista de la boutique de perfumería de lujo AROMASENS. Tu objetivo es entender el perfil psicológico y la personalidad del cliente para recomendar el perfume ideal. Formula preguntas que te ayuden a comprender sus preferencias, estilo de vida, y rasgos de personalidad. Mantén un tono sofisticado y empático, propio de un asesor de lujo. Cuando recomiende perfumes, debo inventar nombres exclusivos de la colección AROMASENS, con descripciones detalladas de notas olfativas y personalidad asociada.`
+      : `Act as a specialist from the luxury perfume boutique AROMASENS. Your goal is to understand the customer's psychological profile and personality to recommend the ideal perfume. Ask questions that help you understand their preferences, lifestyle, and personality traits. Maintain a sophisticated and empathetic tone, typical of a luxury consultant. When recommending perfumes, I should invent exclusive names from the AROMASENS collection, with detailed descriptions of olfactory notes and associated personality.`;
+
+    const systemPrompt = {
+      role: "system",
+      content: aromasensInstructions
+    };
+
+    // Añadimos las instrucciones al historial de conversación si no están ya
+    let enhancedHistory = [...conversationHistory];
+    if (enhancedHistory.length === 0 || enhancedHistory[0].role !== "system") {
+      enhancedHistory = [systemPrompt, ...enhancedHistory];
+    }
+
     switch (model) {
       case 'openai':
-        return await openAIGenerateChatResponse(prompt, language, conversationHistory);
+        return await openAIGenerateChatResponse(prompt, language, enhancedHistory);
       case 'anthropic':
-        return await anthropicService.generateChatResponse(prompt);
+        return await anthropicService.generateChatResponse(prompt, enhancedHistory);
       case 'gemini':
-        return await geminiService.generateChatResponse(prompt);
+        return await geminiService.generateChatResponse(prompt, enhancedHistory);
       default:
         // Por defecto usamos OpenAI
         console.log("Usando modelo de respaldo: openai");
-        return await openAIGenerateChatResponse(prompt, language, conversationHistory);
+        return await openAIGenerateChatResponse(prompt, language, enhancedHistory);
     }
   } catch (error) {
     console.error(`Error con el modelo ${model}:`, error);

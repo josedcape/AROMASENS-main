@@ -85,40 +85,44 @@ export async function generatePerfumeProfile(preferences: ChatPreferences, conve
   }
 }
 
-// Genera una respuesta de chat con memoria persistente
-export async function generateChatResponse(prompt: string, conversationHistory: string[]): Promise<string> {
+export async function generateChatResponse(
+  prompt: string, 
+  conversationHistory: any[] = []
+): Promise<string> {
   try {
-    // Construir mensajes con la historia de la conversación para mantener contexto
-    const messages = [];
-
-    if (conversationHistory && conversationHistory.length > 0) {
-      for (let i = 0; i < conversationHistory.length; i += 2) {
-        if (i < conversationHistory.length) {
-          messages.push({ role: 'user', content: conversationHistory[i] });
-        }
-        if (i + 1 < conversationHistory.length) {
-          messages.push({ role: 'assistant', content: conversationHistory[i + 1] });
-        }
-      }
+    if (!anthropic) {
+      throw new Error("Anthropic client not initialized");
     }
 
-    // Añadir el nuevo prompt al final de los mensajes
-    messages.push({ role: 'user', content: prompt });
+    // Extraer instrucciones del sistema si existen
+    const systemMessage = conversationHistory.find(msg => msg.role === 'system')?.content || 
+      "Eres un especialista de la boutique de perfumería de lujo AROMASENS. Tu objetivo es entender el perfil psicológico y personalidad del cliente para recomendar perfumes inventados exclusivos.";
 
-    const message = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      system: `Eres AROMASENS, un asesor experto en perfumería de lujo con formación avanzada en psicología olfativa.
-      Mantienes un tono profesional pero cálido, utilizando terminología especializada de perfumería cuando sea apropiado.
-      Tus respuestas son concisas pero informativas, con un enfoque en proporcionar valor y conocimiento experto.
-      Recuerdas toda la información previa compartida por el usuario para ofrecer una experiencia personalizada y coherente.`,
-      messages: messages
+    // Construir mensajes para la API de Anthropic
+    const messages = conversationHistory
+      .filter(msg => msg.role !== 'system')
+      .map(msg => ({
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.content
+      }));
+
+    // Añadir el mensaje actual
+    messages.push({
+      role: 'user',
+      content: prompt
     });
 
-    return message.content[0].text;
+    const response = await anthropic.messages.create({
+      model: "claude-3-sonnet-20240229",
+      max_tokens: 1000,
+      system: systemMessage,
+      messages: messages,
+    });
+
+    return response.content[0].type === 'text' ? response.content[0].text : '';
   } catch (error) {
-    console.error('Error en Anthropic service:', error);
-    throw new Error(`Error al generar respuesta de chat con Anthropic: ${error.message}`);
+    console.error("Error with Anthropic:", error);
+    throw new Error(`Anthropic API error: ${error.message}`);
   }
 }
 

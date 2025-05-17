@@ -260,7 +260,17 @@
 
   /* Efectos de hover para las burbujas */
   .chat-message:hover .markdown-content {
-    @apply text-black/90;
+    @apply text-black/90
+  }
+  
+  /* Animación para el mensaje de confirmación */
+  @keyframes fade-in {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;;
   }
 
   /* Custom scrollbar - visible pero elegante */

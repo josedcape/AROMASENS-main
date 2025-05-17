@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { 
   handleStartChat, 
   handleSendMessage, 
-  handleGetRecommendation 
+  handleGetRecommendation,
+  handleEnhancePrompt
 } from "./controllers/chatController";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -15,7 +16,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (gender !== "femenino" && gender !== "masculino") {
         return res.status(400).json({ message: "Invalid gender parameter" });
       }
-      
+
       const perfumes = await storage.getPerfumes(gender);
       res.json(perfumes);
     } catch (error) {
@@ -30,12 +31,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid perfume ID" });
       }
-      
+
       const perfume = await storage.getPerfume(id);
       if (!perfume) {
         return res.status(404).json({ message: "Perfume not found" });
       }
-      
+
       res.json(perfume);
     } catch (error) {
       console.error("Error fetching perfume:", error);
@@ -47,6 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat/start", handleStartChat);
   app.post("/api/chat/message", handleSendMessage);
   app.post("/api/chat/recommendation", handleGetRecommendation);
+  app.post("/api/chat/enhance-prompt", handleEnhancePrompt);
 
   const httpServer = createServer(app);
 
