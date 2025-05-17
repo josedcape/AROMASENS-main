@@ -108,13 +108,181 @@ const greetings = [
   "Hola, soy el experto en fragancias de AROMASENS. ¿Quieres conocer nuestros productos exclusivos?"
 ];
 
+// Precios de los perfumes (dólares)
+const perfumePrices: Record<string, number> = {
+  "fruto-silvestre": 85,
+  "bosque-de-lunas": 120,
+  "citrico-oriental": 95,
+  "jardin-dulce": 110,
+  "selva-mistica": 135,
+  "brisa-tropical": 90,
+  "euforia-de-noche": 140,
+  "cielo-de-sandia": 80,
+  "amor-de-lirio": 125,
+  "horizon-musk": 105
+};
+
+// Detalles adicionales para cada perfume
+interface PerfumeDetails {
+  duracion: string;
+  intensidad: string;
+  estilo: string;
+  popularidad: string;
+}
+
+const perfumeDetails: Record<string, PerfumeDetails> = {
+  "fruto-silvestre": {
+    duracion: "6-8 horas",
+    intensidad: "Media",
+    estilo: "Casual y juvenil",
+    popularidad: "Alta entre 18-30 años"
+  },
+  "bosque-de-lunas": {
+    duracion: "8-10 horas",
+    intensidad: "Alta",
+    estilo: "Elegante y misterioso",
+    popularidad: "Preferido por profesionales"
+  },
+  "citrico-oriental": {
+    duracion: "7-9 horas",
+    intensidad: "Media-alta",
+    estilo: "Sofisticado y versátil",
+    popularidad: "Muy popular en temporada otoño-invierno"
+  },
+  "jardin-dulce": {
+    duracion: "6-7 horas",
+    intensidad: "Media",
+    estilo: "Romántico y delicado",
+    popularidad: "Favorito para ocasiones especiales"
+  },
+  "selva-mistica": {
+    duracion: "10-12 horas",
+    intensidad: "Alta",
+    estilo: "Intenso y enigmático",
+    popularidad: "Exclusivo para conocedores"
+  },
+  "brisa-tropical": {
+    duracion: "5-6 horas",
+    intensidad: "Media-baja",
+    estilo: "Fresco y despreocupado",
+    popularidad: "Ideal para climas cálidos"
+  },
+  "euforia-de-noche": {
+    duracion: "10-14 horas",
+    intensidad: "Muy alta",
+    estilo: "Seductor y memorable",
+    popularidad: "Perfecto para eventos nocturnos"
+  },
+  "cielo-de-sandia": {
+    duracion: "4-6 horas",
+    intensidad: "Baja",
+    estilo: "Ligero y refrescante",
+    popularidad: "Favorito para uso diario en verano"
+  },
+  "amor-de-lirio": {
+    duracion: "8-10 horas",
+    intensidad: "Media-alta",
+    estilo: "Elegante y floral",
+    popularidad: "Muy apreciado para bodas y eventos formales"
+  },
+  "horizon-musk": {
+    duracion: "8-12 horas",
+    intensidad: "Media",
+    estilo: "Versátil y contemporáneo",
+    popularidad: "Popular entre todos los géneros"
+  }
+};
+
+// Función para obtener información detallada de un perfume específico
+function getPerfumeDetailedInfo(perfumeId: string): string {
+  const perfume = perfumesData.find(p => p.id === perfumeId);
+  if (!perfume) return "Lo siento, no tengo información detallada sobre ese perfume.";
+  
+  const details = perfumeDetails[perfumeId];
+  const price = perfumePrices[perfumeId];
+  
+  return `
+## ${perfume.name} (${price} USD)
+
+${perfume.description}
+
+### Características
+- **Notas principales:** ${perfume.notes.join(", ")}
+- **Ideal para:** ${perfume.occasions}
+- **Duración:** ${details.duracion}
+- **Intensidad:** ${details.intensidad}
+- **Estilo:** ${details.estilo}
+
+### ¿Por qué elegir ${perfume.name}?
+${getPerfumeUniqueSellingPoint(perfumeId)}
+
+### Recomendación del experto
+${getExpertRecommendation(perfumeId)}
+  `;
+}
+
+// Función para generar un punto de venta único para cada perfume
+function getPerfumeUniqueSellingPoint(perfumeId: string): string {
+  const sellingPoints: Record<string, string> = {
+    "fruto-silvestre": "Su combinación única de frutas silvestres crea una experiencia olfativa juvenil y enérgica que te hará destacar. La adición de menta proporciona un toque refrescante inesperado que eleva esta fragancia por encima de otros perfumes frutales.",
+    "bosque-de-lunas": "La mezcla magistral de maderas nobles con lavanda crea una atmósfera nocturna inigualable. Es una fragancia que evoca recuerdos y despierta emociones profundas, perfecta para quienes buscan dejar una impresión duradera.",
+    "citrico-oriental": "La perfecta fusión entre Occidente y Oriente en una botella. Sus notas cítricas iniciales evolucionan hacia un corazón especiado que revela diferentes facetas a lo largo del día, convirtiéndolo en una experiencia olfativa compleja y sofisticada.",
+    "jardin-dulce": "Un abrazo floral con un toque de dulzura que nunca resulta empalagoso. El balance perfecto entre las flores y la suavidad de la vainilla crea una sensación reconfortante que perdura en la piel.",
+    "selva-mistica": "Inspirado en las profundidades inexploradas de selvas ancestrales, este perfume transporta a quien lo usa a un mundo de misterio y sofisticación. Sus materias primas de la más alta calidad aseguran una experiencia olfativa premium.",
+    "brisa-tropical": "Captura la esencia del paraíso tropical en cada aplicación. Es como unas vacaciones en una isla paradisíaca condensadas en fragancia, ideal para quienes buscan escapar de la rutina diaria.",
+    "euforia-de-noche": "Una obra maestra nocturna que evoluciona con el calor de la piel, revelando diferentes facetas a lo largo de la noche. Su estela memorable garantiza que serás recordado mucho después de haber dejado la habitación.",
+    "cielo-de-sandia": "La frescura reinventada con un toque contemporáneo. Su composición única captura la jugosidad de la sandía sin resultar infantil, creando una fragancia sorprendentemente sofisticada dentro de su ligereza.",
+    "amor-de-lirio": "Elaborado con extractos de lirios blancos cultivados exclusivamente para AROMASENS, ofrece una experiencia floral de lujo que celebra momentos especiales con elegancia atemporal.",
+    "horizon-musk": "La versatilidad llevada a su máxima expresión. Su fórmula innovadora permite adaptarse a diferentes situaciones y personalidades, convirtiéndolo en el compañero perfecto para quienes llevan un estilo de vida dinámico."
+  };
+  
+  return sellingPoints[perfumeId] || "Una fragancia excepcional que refleja la calidad y exclusividad de AROMASENS.";
+}
+
+// Función para generar una recomendación de experto
+function getExpertRecommendation(perfumeId: string): string {
+  const recommendations: Record<string, string> = {
+    "fruto-silvestre": "Recomiendo aplicarlo en puntos de pulso por la mañana para maximizar su proyección energética. Ideal para personas extrovertidas y dinámicas que disfrutan de un estilo de vida activo.",
+    "bosque-de-lunas": "Perfecto para eventos nocturnos importantes. Aplícalo 30 minutos antes de salir para permitir que las notas de fondo se desarrollen completamente. Especialmente recomendado para personalidades misteriosas y sofisticadas.",
+    "citrico-oriental": "Excelente para transiciones día-noche. Su evolución en la piel lo hace ideal para profesionales que necesitan una fragancia que funcione tanto en reuniones de trabajo como en compromisos sociales después de la oficina.",
+    "jardin-dulce": "Recomendado para personas románticas y soñadoras. Su proyección moderada lo hace perfecto para encuentros íntimos donde la cercanía permitirá apreciar todos sus matices.",
+    "selva-mistica": "Para conocedores que aprecian la complejidad. Sugiero utilizarlo en climas fríos donde sus notas amaderadas e incienso pueden desarrollarse completamente, creando una experiencia olfativa excepcional.",
+    "brisa-tropical": "Ideal para uso diario en climas cálidos. Su frescura perdura sorprendentemente bien bajo el sol. Perfecto para personalidades alegres y sociables que disfrutan del aire libre.",
+    "euforia-de-noche": "Reservado para momentos especiales y noches memorables. Su intensidad y complejidad lo convierten en una declaración de intenciones. Ideal para personalidades atrevidas y seguras de sí mismas.",
+    "cielo-de-sandia": "Recomendado para actividades deportivas y momentos de relax. Su ligereza lo hace refrescante sin ser invasivo. Perfecto para quienes valoran la discreción y naturalidad.",
+    "amor-de-lirio": "La elección perfecta para bodas y celebraciones. Su elegancia floral atemporal complementa perfectamente los momentos de felicidad. Ideal para personalidades refinadas y sentimentales.",
+    "horizon-musk": "Mi recomendación para quienes buscan una fragancia versátil que funcione en cualquier situación. Su balance perfecto entre frescura y calidez lo hace apropiado para todo clima y ocasión."
+  };
+  
+  return recommendations[perfumeId] || "Una excelente elección que garantiza sofisticación y distinción.";
+}
+
 // Función para encontrar perfumes que coincidan con criterios específicos
 function findMatchingPerfumes(query: string): PerfumeInfo[] {
   query = query.toLowerCase();
   
+  // Si la consulta es muy corta o genérica, mostrar una selección curada
+  if (query.length < 3 || query === "hola" || query === "perfume" || query === "recomendacion") {
+    return [
+      perfumesData.find(p => p.id === "fruto-silvestre")!,
+      perfumesData.find(p => p.id === "bosque-de-lunas")!,
+      perfumesData.find(p => p.id === "citrico-oriental")!
+    ];
+  }
+  
+  // Buscar por nombre específico del perfume
+  const exactMatch = perfumesData.find(p => 
+    p.name.toLowerCase() === query || 
+    p.id.toLowerCase() === query.replace(/\s+/g, '-')
+  );
+  
+  if (exactMatch) {
+    return [exactMatch];
+  }
+  
   // Patrones de búsqueda comunes
   const patterns = {
-    floral: ['floral', 'flores', 'jazmín', 'rosa', 'lirio'],
+    floral: ['floral', 'flores', 'jazmín', 'rosa', 'lirio', 'orquídea'],
     frutal: ['frutal', 'fruta', 'fresa', 'cítrico', 'naranja', 'limón', 'sandía', 'melón', 'mango', 'piña'],
     maderado: ['maderado', 'madera', 'cedro', 'sándalo', 'roble', 'vetiver'],
     dulce: ['dulce', 'vainilla', 'ámbar', 'chocolate'],
@@ -180,6 +348,61 @@ function findMatchingPerfumes(query: string): PerfumeInfo[] {
 // Función para generar una recomendación basada en un mensaje del usuario
 function generateRecommendation(message: string): {response: string, perfumes: PerfumeInfo[]} {
   const query = message.toLowerCase();
+  
+  // Verificar si el usuario está preguntando específicamente por un perfume
+  const perfumeNames = perfumesData.map(p => p.name.toLowerCase());
+  const mentionedPerfume = perfumeNames.find(name => query.includes(name.toLowerCase()));
+  
+  if (mentionedPerfume) {
+    const perfume = perfumesData.find(p => p.name.toLowerCase() === mentionedPerfume)!;
+    const price = perfumePrices[perfume.id];
+    const details = perfumeDetails[perfume.id];
+    
+    return {
+      response: `
+**${perfume.name}** - *${price} USD*
+
+${perfume.description}
+
+**Notas principales:** ${perfume.notes.join(", ")}
+**Duración:** ${details.duracion}
+**Intensidad:** ${details.intensidad}
+**Ideal para:** ${perfume.occasions}
+
+${getPerfumeUniqueSellingPoint(perfume.id)}
+
+¿Te gustaría conocer otra fragancia similar o prefieres más detalles sobre ${perfume.name}?`,
+      perfumes: [perfume]
+    };
+  }
+  
+  // Comprobar si es una pregunta sobre precio
+  if (query.includes("precio") || query.includes("costo") || query.includes("vale") || query.includes("dolar") || query.includes("$")) {
+    const matchingPerfumes = findMatchingPerfumes(query);
+    
+    let responseText = "Aquí tienes los precios de nuestras exclusivas fragancias:\n\n";
+    
+    // Si la consulta menciona un perfume específico, mostrar solo ese
+    if (matchingPerfumes.length === 1) {
+      const perfume = matchingPerfumes[0];
+      const price = perfumePrices[perfume.id];
+      responseText = `**${perfume.name}** tiene un precio de **${price} USD**.\n\nEs una inversión en calidad y exclusividad, elaborado con los mejores ingredientes naturales y presentado en un elegante frasco de diseño. ¿Te gustaría conocer más detalles sobre esta fragancia?`;
+    } else {
+      // Mostrar precios de varios perfumes
+      matchingPerfumes.forEach((perfume, index) => {
+        const price = perfumePrices[perfume.id];
+        responseText += `**${perfume.name}:** ${price} USD\n`;
+      });
+      
+      responseText += "\n¿Alguna de estas fragancias te interesa particularmente?";
+    }
+    
+    return {
+      response: responseText,
+      perfumes: matchingPerfumes.slice(0, 3)
+    };
+  }
+  
   const matchingPerfumes = findMatchingPerfumes(query);
   
   // Patrones para detectar preferencias
@@ -196,11 +419,14 @@ function generateRecommendation(message: string): {response: string, perfumes: P
   
   // Construir respuesta personalizada
   if (matchingPerfumes.length === 1) {
-    responseText = `He encontrado un perfume perfecto para ti: **${matchingPerfumes[0].name}**. ${matchingPerfumes[0].description}`;
+    const perfume = matchingPerfumes[0];
+    const price = perfumePrices[perfume.id];
+    responseText = `He encontrado el perfume perfecto para ti: **${perfume.name}** (${price} USD).\n\n${perfume.description}\n\n**Notas principales:** ${perfume.notes.join(", ")}\n\n¿Te gustaría conocer más detalles sobre esta exquisita fragancia?`;
   } else if (matchingPerfumes.length <= 3) {
-    responseText = `Basándome en tus preferencias, te recomiendo estos perfumes:\n\n`;
+    responseText = `Basándome en tus preferencias, te recomiendo estas fragancias exclusivas:\n\n`;
     matchingPerfumes.forEach((perfume, index) => {
-      responseText += `**${index + 1}. ${perfume.name}**: ${perfume.description.substring(0, 100)}...\n\n`;
+      const price = perfumePrices[perfume.id];
+      responseText += `**${index + 1}. ${perfume.name}** (${price} USD): ${perfume.description}\n\n`;
     });
   } else {
     // Seleccionar los 3 mejores perfumes basados en los criterios más dominantes
@@ -257,14 +483,19 @@ function generateRecommendation(message: string): {response: string, perfumes: P
       bestMatches = matchingPerfumes.slice(0, 3);
     }
     
-    responseText = `Basándome en tus gustos, he seleccionado estas fragancias para ti:\n\n`;
+    responseText = `Basándome en tu consulta, estas son las fragancias premium que te recomiendo:\n\n`;
     bestMatches.forEach((perfume, index) => {
-      responseText += `**${index + 1}. ${perfume.name}**: ${perfume.description.substring(0, 100)}...\n\n`;
+      const price = perfumePrices[perfume.id];
+      responseText += `**${index + 1}. ${perfume.name}** (${price} USD): ${perfume.description}\n\n`;
     });
   }
   
-  // Añadir cierre
-  responseText += "¿Te gustaría más información sobre alguno de estos perfumes o prefieres explorar otras opciones?";
+  // Añadir cierre personalizado
+  if (query.length < 5 || query === "hola") {
+    responseText = `¡Bienvenido/a a AROMASENS! ${responseText}`;
+  }
+  
+  responseText += "¿Te gustaría conocer más detalles sobre alguna de estas fragancias o tienes alguna preferencia específica?";
   
   return {
     response: responseText,
@@ -342,10 +573,64 @@ export default function VirtualAssistant() {
     setUserInput("");
     setIsTyping(true);
     
-    // Simular tiempo de respuesta
+    // Verificar si es una consulta específica sobre un perfume
+    const isPerfumeQuery = perfumesData.some(perfume => 
+      userInput.toLowerCase().includes(perfume.name.toLowerCase()) ||
+      userInput.toLowerCase().includes(perfume.id.toLowerCase().replace('-', ' '))
+    );
+    
+    // Verificar si es sobre precio, características, etc.
+    const isDetailQuery = /precio|costo|vale|dolar|\$|caracter[ií]sticas|detalles|duraci[oó]n|intensidad/i.test(userInput.toLowerCase());
+    
+    // Simular tiempo de respuesta (más corto para consultas simples, más largo para respuestas elaboradas)
+    const responseTime = isPerfumeQuery || isDetailQuery ? 2000 : 1500;
+    
     setTimeout(() => {
-      // Generar respuesta basada en el mensaje del usuario
-      const { response, perfumes } = generateRecommendation(newUserMessage.content);
+      // Generar respuesta basada en el mensaje del usuario y el contexto
+      let { response, perfumes } = generateRecommendation(newUserMessage.content);
+      
+      // Verificar si hay mensajes previos para mantener coherencia
+      if (chatMessages.length > 1) {
+        const lastAssistantMessage = [...chatMessages]
+          .reverse()
+          .find(msg => msg.role === 'assistant');
+        
+        const lastUserMessages = chatMessages
+          .filter(msg => msg.role === 'user')
+          .slice(-2);
+        
+        // Si el usuario pregunta por más detalles después de una recomendación
+        if (lastAssistantMessage && perfumes.length === 1 && 
+            (userInput.toLowerCase().includes("más detalles") || 
+             userInput.toLowerCase().includes("cuéntame más") ||
+             userInput.toLowerCase().includes("información") ||
+             userInput.toLowerCase().includes("dime más"))) {
+          // Obtener información detallada del perfume
+          response = getPerfumeDetailedInfo(perfumes[0].id);
+        }
+        
+        // Si el usuario está pidiendo una recomendación después de mencionar preferencias
+        if (lastUserMessages.length >= 2 && 
+            (userInput.toLowerCase().includes("recomienda") || 
+             userInput.toLowerCase().includes("sugiere") ||
+             userInput.toLowerCase().includes("cuál es mejor"))) {
+          // Combinar mensajes anteriores para contextualizar la recomendación
+          const context = lastUserMessages.map(msg => msg.content).join(" ");
+          const contextRecommendation = generateRecommendation(context);
+          
+          if (contextRecommendation.perfumes.length > 0) {
+            perfumes = contextRecommendation.perfumes;
+            response = `Basándome en tus preferencias anteriores, estas son mis recomendaciones personalizadas:\n\n`;
+            
+            perfumes.forEach((perfume, index) => {
+              const price = perfumePrices[perfume.id];
+              response += `**${index + 1}. ${perfume.name}** (${price} USD): ${perfume.description}\n\n`;
+            });
+            
+            response += "¿Te gustaría conocer más detalles sobre alguna de estas fragancias exclusivas?";
+          }
+        }
+      }
       
       // Añadir mensaje del asistente
       const newAssistantMessage: ChatMessage = {
@@ -360,10 +645,14 @@ export default function VirtualAssistant() {
       // Leer la respuesta si TTS está habilitado
       if (ttsSettings.enabled) {
         // Eliminar formato markdown para TTS
-        const plainText = response.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\n/g, ' ');
+        const plainText = response.replace(/\*\*(.*?)\*\*/g, '$1')
+                                 .replace(/\n\n/g, '. ')
+                                 .replace(/\n/g, ' ')
+                                 .replace(/\*/g, '')
+                                 .replace(/#{1,3} /g, '');
         speakText(plainText);
       }
-    }, 1500);
+    }, responseTime);
   };
 
   const activateChatMode = () => {
